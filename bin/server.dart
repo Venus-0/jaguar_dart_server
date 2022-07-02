@@ -3,13 +3,14 @@ import 'dart:convert';
 
 import 'package:jaguar/jaguar.dart';
 
+import 'api/common.dart';
 import 'api/login.dart';
 
 class Server {
   static const int ERROR = 403;
   static const int SUCCESS = 200;
   static const int NOT_FOUND = 404;
-  static const int port = 11451;
+  static const int port = 8080;
   static const String GET = "GET";
   static const String POST = "POST";
 
@@ -24,7 +25,7 @@ class Server {
   }
 
   ///过滤器
-  final Map<String, dynamic> filter = {'login': Login.login};
+  final Map<String, dynamic> filter = {'login': Login.login, "serverTest": Common.serverTest};
 
   Future<void> initServer() async {
     if (server == null && !isInit) {
@@ -39,7 +40,7 @@ class Server {
   }
 
   FutureOr<dynamic> handler(Context ctx) async {
-    String apiIndex = ctx.uri.toString().substring(5,getEnd(ctx.uri.toString()));
+    String apiIndex = ctx.uri.toString().substring(5, getEnd(ctx.uri.toString()));
     print(apiIndex);
     Response? _response;
     if (filter.containsKey(apiIndex)) {
