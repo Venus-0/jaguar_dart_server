@@ -35,7 +35,7 @@ class SessionDao {
   Future<Session?> querySession(String account) async {
     MySqlConnection? conn = await Mysql.getDB();
     print("SELECT * FROM ${Mysql.TABLE_USER_SESSION} WHERE account = \"$account\"");
-    Results res = await conn!.query("SELECT * FROM ${Mysql.TABLE_USER_SESSION} WHERE account = \"$account\"");
+    Results res = await conn.query("SELECT * FROM ${Mysql.TABLE_USER_SESSION} WHERE account = \"$account\"");
     Session? session;
     if (res.isNotEmpty) {
       session = Session.fromJson(res.first.fields);
@@ -56,7 +56,7 @@ class SessionDao {
     });
     mod = mod.substring(0, mod.length - 1);
     print("UPDATE ${Mysql.TABLE_USER_SESSION} SET $mod WHERE account = \"$account\"");
-    await conn!.query("UPDATE ${Mysql.TABLE_USER_SESSION} SET $mod WHERE account = \"$account\"");
+    await conn.query("UPDATE ${Mysql.TABLE_USER_SESSION} SET $mod WHERE account = \"$account\"");
   }
 
   ///添加session
@@ -76,6 +76,6 @@ class SessionDao {
     fields = fields.substring(0, fields.length - 1);
     values = values.substring(0, values.length - 1);
     print("INSERT INTO ${Mysql.TABLE_USER_SESSION} ($fields) VALUES ($values)");
-    await conn!.query("INSERT INTO ${Mysql.TABLE_USER_SESSION} ($fields) VALUES ($values)");
+    await conn.query("INSERT INTO ${Mysql.TABLE_USER_SESSION} ($fields) VALUES ($values)");
   }
 }
