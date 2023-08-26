@@ -66,6 +66,9 @@ class GlobalDao {
     }
     print("[DAO][$tableName] SQL: $_sql");
     Results _res = await conn.query(_sql, _whereList);
+    if (_res.isEmpty) {
+      return {};
+    }
     return _res.first.fields;
   }
 
@@ -168,8 +171,11 @@ class GlobalDao {
   Future<bool> insert(Map<String, dynamic> data) async {
     MySqlConnection conn = await Mysql.getDB();
     if (data.isEmpty) return false;
+
+    List<String> columns = List.generate(data.keys.toList().length, (index) => "`${data.keys.toList()[index]}`");
     String _sql =
-        "INSERT INTO $tableName (${data.keys.toList().join(",")}) VALUES (${List.generate(data.keys.toList().length, (index) => "?").join(',')})";
+        "INSERT INTO $tableName (${columns.join(",")}) VALUES (${List.generate(data.keys.toList().length, (index) => "?").join(',')})";
+    print("[DAO][$tableName] SQL: $_sql");
     Results _res = await conn.query(_sql, data.values.toList());
     return (_res.affectedRows ?? 0) >= 1;
   }

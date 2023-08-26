@@ -9,4 +9,8 @@ class DataUtils {
     var digest = md5.convert(content);
     return hex.encode(digest.bytes);
   }
+
+  static DateTime formatDateTime(DateTime time) {
+    return DateTime(time.year, time.month, time.day, time.hour, time.minute, time.second);
+  }
 }

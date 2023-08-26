@@ -12,9 +12,6 @@ class Mysql {
   }
 
   static MySqlConnection? conn;
-  static const String TABLE_USER = "user";
-  static const String TABLE_USER_SESSION = "user_session";
-
   Future<void> connectDB() async {
     final settings = ConnectionSettings(
       host: Config.dbSettings['host'],
@@ -22,6 +19,7 @@ class Mysql {
       user: Config.dbSettings['user'],
       password: Config.dbSettings['password'],
       db: Config.dbSettings['db'],
+      maxPacketSize: 62 * 1024 * 1024,
     );
     try {
       conn = await MySqlConnection.connect(settings);

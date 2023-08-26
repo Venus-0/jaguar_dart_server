@@ -3,13 +3,16 @@ import 'dart:convert';
 
 import 'package:jaguar/jaguar.dart';
 
+import 'api/base_api.dart';
+import 'api/bbs.dart';
 import 'api/common.dart';
-import 'api/login.dart';
+import 'api/user.dart';
 
 class Server {
   static const int ERROR = 403;
   static const int SUCCESS = 200;
   static const int NOT_FOUND = 404;
+  static const int TOKEN_EXPIRED = 401;
   static const int port = 8080;
   static const String GET = "GET";
   static const String POST = "POST";
@@ -25,12 +28,16 @@ class Server {
   }
 
   ///过滤器
-  final Map<String, dynamic> filter = {'login': Login.login, "serverTest": Common.serverTest};
+  BaseApi? _filter(Context ctx, String method) {
+    if (method == "user") return User(ctx);
+    if (method == "common") return Common(ctx);
+    if (method == "bbs") return BBS(ctx);
+  }
 
   Future<void> initServer() async {
     if (server == null && !isInit) {
       server = new Jaguar(address: '127.0.0.1', port: port)
-        ..staticFiles("/*", 'bin')
+        // ..staticFiles("/*", 'bin')
         ..post('/api/*', handler)
         ..get('/api/*', handler);
       await server!.serve();
@@ -40,11 +47,22 @@ class Server {
   }
 
   FutureOr<dynamic> handler(Context ctx) async {
-    String apiIndex = ctx.uri.toString().substring(5, getEnd(ctx.uri.toString()));
-    print(apiIndex);
+    print(ctx.uri.toString());
+    print(ctx.uri.toString().split("/"));
+    List<String> _addres = ctx.uri.toString().split("/")..removeAt(0);
+
+    print(_addres);
+    if (_addres.length < 3) {
+      ctx.response = Response(body: jsonEncode({}), statusCode: NOT_FOUND);
+      return;
+    }
+    String _keyMethod = _addres[1];
+    String _subMethod = _addres[2];
+
     Response? _response;
-    if (filter.containsKey(apiIndex)) {
-      _response = await filter[apiIndex](ctx);
+    BaseApi? controller = _filter(ctx, _keyMethod);
+    if (controller != null) {
+      _response = await controller.method(_subMethod);
     }
     if (_response != null) {
       ctx.response = _response;

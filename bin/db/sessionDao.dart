@@ -1,81 +1,63 @@
 import 'dart:collection';
+import 'package:intl/intl.dart';
 import 'package:mysql1/mysql1.dart';
-import '../api/session.dart';
+import '../model/token_model.dart';
+import 'global_dao.dart';
 import 'mysql.dart';
 
 ///session管理
 class SessionDao {
+  late GlobalDao globalDao;
+  SessionDao() {
+    globalDao = GlobalDao("token");
+  }
+
   ///添加session
-  Future<String> loginSession(String account, String pwd) async {
-    Session? session = await querySession(account);
+  Future<String> loginSession(int user_id, String pwd, String device) async {
+    Token? token = await querySession(user_id);
     DateTime _now = DateTime.now();
-    if (session == null) {
+    if (token == null) {
       //没有session添加一个
-      session = Session(
-          account: account,
-          session: Session.generateSessionId(account, pwd, _now.millisecondsSinceEpoch ~/ 1000),
-          sessionTime: _now.millisecondsSinceEpoch ~/ 1000,
-          loginTime: _now.millisecondsSinceEpoch ~/ 1000);
-      await addSession(session);
+      token = Token(
+        token: Token.generateSessionId(user_id, pwd, _now.millisecondsSinceEpoch ~/ 1000),
+        device: device,
+        user_id: user_id,
+        create_time: _now,
+        update_time: _now,
+      );
+      await addSession(token);
     } else {
       HashMap<String, dynamic> modifyMap = HashMap();
-      modifyMap['loginTime'] = _now.millisecondsSinceEpoch ~/ 1000;
+      modifyMap['update_time'] = DateFormat("yyyy-MM-dd HH:mm:ss").format(_now);
       //当前时间与登陆时间相差30分钟重新生成session
-      if (session.sessionIsAvailable()) {
-        session.session = Session.generateSessionId(account, pwd, _now.millisecondsSinceEpoch ~/ 1000);
-        modifyMap['session'] = session.session;
+      if (token.tokenIsAvailable()) {
+        token.token = Token.generateSessionId(user_id, pwd, _now.millisecondsSinceEpoch ~/ 1000);
+        modifyMap['token'] = token.token;
       }
-      await updateSession(account, modifyMap);
+      await updateSession(user_id, modifyMap);
     }
 
-    return session.session;
+    return token.token;
   }
 
   ///查询session
-  Future<Session?> querySession(String account) async {
-    MySqlConnection? conn = await Mysql.getDB();
-    print("SELECT * FROM ${Mysql.TABLE_USER_SESSION} WHERE account = \"$account\"");
-    Results res = await conn.query("SELECT * FROM ${Mysql.TABLE_USER_SESSION} WHERE account = \"$account\"");
-    Session? session;
-    if (res.isNotEmpty) {
-      session = Session.fromJson(res.first.fields);
+  Future<Token?> querySession(int user_id) async {
+    Map<String, dynamic> _token = await globalDao.getOne(where: [Where("user_id", user_id)]);
+    Token? _session;
+    if (_token.isNotEmpty) {
+      _session = Token.fromJson(_token);
     }
-    return session;
+    return _session;
   }
 
   ///更新session
-  Future<void> updateSession(String account, HashMap<String, dynamic> modifyMap) async {
-    MySqlConnection? conn = await Mysql.getDB();
-    String mod = "";
-    modifyMap.forEach((key, value) {
-      if (value is String) {
-        mod += "$key='$value',";
-      } else {
-        mod += "$key=$value,";
-      }
-    });
-    mod = mod.substring(0, mod.length - 1);
-    print("UPDATE ${Mysql.TABLE_USER_SESSION} SET $mod WHERE account = \"$account\"");
-    await conn.query("UPDATE ${Mysql.TABLE_USER_SESSION} SET $mod WHERE account = \"$account\"");
+  Future<bool> updateSession(int user_id, HashMap<String, dynamic> modifyMap) async {
+    return await globalDao.update(modifyMap, where: [Where("user_id", user_id)]);
   }
 
   ///添加session
-  Future<void> addSession(Session session) async {
-    MySqlConnection? conn = await Mysql.getDB();
-    Map<String, dynamic> json = session.toJson();
-    String fields = "";
-    String values = "";
-    json.forEach((key, value) {
-      fields += "$key,";
-      if (value is String) {
-        values += "'$value',";
-      } else {
-        values += "$value,";
-      }
-    });
-    fields = fields.substring(0, fields.length - 1);
-    values = values.substring(0, values.length - 1);
-    print("INSERT INTO ${Mysql.TABLE_USER_SESSION} ($fields) VALUES ($values)");
-    await conn.query("INSERT INTO ${Mysql.TABLE_USER_SESSION} ($fields) VALUES ($values)");
+  Future<bool> addSession(Token session) async {
+    Map<String, dynamic> _sessionJson = session.toJson();
+    return await globalDao.insert(_sessionJson);
   }
 }
