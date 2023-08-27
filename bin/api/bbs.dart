@@ -5,6 +5,7 @@ import 'package:jaguar/http/response/response.dart';
 
 import 'dart:async';
 
+import '../db/bbs_dao.dart';
 import '../db/global_dao.dart';
 import '../model/bbs_model.dart';
 import '../model/comment_model.dart';
@@ -105,17 +106,22 @@ class BBS extends BaseApi {
     GlobalDao _commentDao = GlobalDao("comment");
 
     ///TODO:楼中楼的话判断是否评论被删除
-    // if (type == CommentModel.TYPE_COMMENT) {
-    //   ///
-    //   Map<String, dynamic> _commentInComment = await _commentDao.getOne(where: [Where("comment_id", comment_id)]);
-    //   if (_commentInComment.isEmpty || _commentInComment['delete_time'] != null) {
-    //     responseBean.code = Server.ERROR;
-    //     responseBean.msg = "评论被删除或不存在";
-    //     return Response(statusCode: responseBean.code, body: responseBean.toJsonString());
-    //   } else {
+    if (type == CommentModel.TYPE_COMMENT) {
+      Map<String, dynamic> _commentInComment = await _commentDao.getOne(where: [Where("comment_id", comment_id)]);
+      if (_commentInComment.isEmpty || _commentInComment['delete_time'] != null) {
+        responseBean.code = Server.ERROR;
+        responseBean.msg = "评论被删除或不存在";
+        return Response(statusCode: responseBean.code, body: responseBean.toJsonString());
+      }
+    }
 
-    //   }
-    // }
+    ///统一判断帖子是否被删除
+    Map<String, dynamic> _bbsComment = await _bbsDao.getOne(where: [Where("id", comment_id)]);
+    if (_bbsComment.isEmpty || _bbsComment['delete_time'] != null) {
+      responseBean.code = Server.ERROR;
+      responseBean.msg = "${type == 1 ? '文章' : '帖子'}被删除或不存在";
+      return Response(statusCode: responseBean.code, body: responseBean.toJsonString());
+    }
 
     Map<String, dynamic> _commentModel = CommentModel(
       comment: comment,
@@ -130,7 +136,12 @@ class BBS extends BaseApi {
     bool _ret = await _commentDao.insert(_commentModel);
     if (_ret) {
       ///TODO：帖子回复数量+1
-
+      if (type == 3) {
+        //楼中楼暂不计入回复数量
+      } else {
+        BBSDao _bbsDao = BBSDao();
+        await _bbsDao.addComment(comment_id);
+      }
 
       responseBean.code = Server.SUCCESS;
       responseBean.msg = "添加成功";
