@@ -30,9 +30,8 @@ class Mysql {
   }
 
   static Future<MySqlConnection> getDB() async {
-    if (conn == null) {
-      await _instance!.connectDB();
-    }
+    await conn?.close();
+    await _instance!.connectDB();
     return conn!;
   }
 }

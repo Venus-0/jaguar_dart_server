@@ -44,6 +44,8 @@ class GlobalDao {
             _whereList.addAll(_value.value as List);
           } else if (_value.operator == "LIKE") {
             _where += "`${_value.key}` LIKE ${_value.value}";
+          } else {
+            _where += "`${_value.key}` ${_value.operator} ${_value.value}";
           }
         }
         if (i + 1 < where.length) {
@@ -58,7 +60,7 @@ class GlobalDao {
     }
 
     if (order.isNotEmpty) {
-      _sql += " ORDER BY $_sql";
+      _sql += " ORDER BY $order";
     }
 
     if (limit != null) {
@@ -96,6 +98,8 @@ class GlobalDao {
             _whereList.addAll(_value.value as List);
           } else if (_value.operator == "LIKE") {
             _where += "`${_value.key}` LIKE ${_value.value}";
+          } else {
+            _where += "`${_value.key}` ${_value.operator} ${_value.value}";
           }
         }
         if (i + 1 < where.length) {
@@ -110,18 +114,18 @@ class GlobalDao {
     }
 
     if (order.isNotEmpty) {
-      _sql += " ORDER BY $_sql";
+      _sql += " ORDER BY $order";
     }
 
     if (limit != null) {
       _sql += " LIMIT ${limit.start},${limit.limit}";
     }
-    print("[DAO][$tableName] SQL: $_sql");
     Results _res = await conn.query(_sql, _whereList);
     List<Map<String, dynamic>> _list = [];
     for (final row in _res) {
       _list.add(row.fields);
     }
+    print("[DAO][$tableName] SQL: $_sql  RES:$_list");
     return _list;
   }
 
@@ -151,6 +155,8 @@ class GlobalDao {
             _whereList.addAll(_value.value as List);
           } else if (_value.operator == "LIKE") {
             _where += "`${_value.key}` LIKE ${_value.value}";
+          } else {
+            _where += "`${_value.key}` ${_value.operator} ${_value.value}";
           }
         }
         if (i + 1 < where.length) {
@@ -163,7 +169,7 @@ class GlobalDao {
     if (_where.isNotEmpty) {
       _sql += " WHERE $_where";
     }
-    print("[DAO][$tableName] SQL: $_sql");
+    print("[DAO][$tableName] SQL: $_sql ${_whereList}");
     Results _res = await conn.query(_sql, _whereList);
     return (_res.affectedRows ?? 0) >= 1;
   }

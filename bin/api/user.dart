@@ -68,7 +68,7 @@ class User extends BaseApi {
         return Response(statusCode: responseBean.code, body: responseBean.toJsonString());
       } else {
         String session = await SessionDao().loginSession(user.user_id, pwd, device);
-        responseBean.result = {'user': session};
+        responseBean.result = {"user": user.toJson(), 'token': session};
         responseBean.msg = "登陆成功";
         return Response(statusCode: responseBean.code, body: responseBean.toJsonString(), headers: {"Set-Cookie": "userSession=$session"});
       }

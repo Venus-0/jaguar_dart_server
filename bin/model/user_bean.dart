@@ -47,8 +47,8 @@ class UserModel {
         "username": username,
         "email": email,
         "avatar": avatar,
-        'create_time': create_time == null ? null : DateFormat("yyyy-MM-dd").format(create_time!),
-        'disable_time': disable_time == null ? null : DateFormat("yyyy-MM-dd").format(disable_time!),
-        'update_time': update_time == null ? null : DateFormat("yyyy-MM-dd").format(update_time!),
+        'create_time': create_time == null ? null : DateFormat("yyyy-MM-dd HH:mm:ss").format(create_time!),
+        'disable_time': disable_time == null ? null : DateFormat("yyyy-MM-dd HH:mm:ss").format(disable_time!),
+        'update_time': update_time == null ? null : DateFormat("yyyy-MM-dd HH:mm:ss").format(update_time!),
       };
 }

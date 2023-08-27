@@ -16,10 +16,17 @@ class SessionDao {
   Future<String> loginSession(int user_id, String pwd, String device) async {
     Token? token = await querySession(user_id);
     DateTime _now = DateTime.now();
-    if (token == null) {
-      //没有session添加一个
+    if (token == null || !token.tokenIsAvailable()) {
+      if (!(token?.tokenIsAvailable() ?? true)) {
+        ///过期要更新禁用时间
+        HashMap<String, dynamic> modifyMap = HashMap();
+        modifyMap['disable_time'] = DateFormat("yyyy-MM-dd HH:mm:ss").format(_now);
+        modifyMap['update_time'] = DateFormat("yyyy-MM-dd HH:mm:ss").format(_now);
+        await updateSession(user_id, modifyMap);
+      }
+      //没有token或token过期添加一个
       token = Token(
-        token: Token.generateSessionId(user_id, pwd, _now.millisecondsSinceEpoch ~/ 1000),
+        token: Token.generateSessionId(user_id, pwd, _now.millisecondsSinceEpoch),
         device: device,
         user_id: user_id,
         create_time: _now,
@@ -29,11 +36,6 @@ class SessionDao {
     } else {
       HashMap<String, dynamic> modifyMap = HashMap();
       modifyMap['update_time'] = DateFormat("yyyy-MM-dd HH:mm:ss").format(_now);
-      //当前时间与登陆时间相差30分钟重新生成session
-      if (token.tokenIsAvailable()) {
-        token.token = Token.generateSessionId(user_id, pwd, _now.millisecondsSinceEpoch ~/ 1000);
-        modifyMap['token'] = token.token;
-      }
       await updateSession(user_id, modifyMap);
     }
 
@@ -42,7 +44,8 @@ class SessionDao {
 
   ///查询session
   Future<Token?> querySession(int user_id) async {
-    Map<String, dynamic> _token = await globalDao.getOne(where: [Where("user_id", user_id)]);
+    Map<String, dynamic> _token =
+        await globalDao.getOne(where: [Where("user_id", user_id), Where("disable_time", null)], order: "update_time DESC");
     Token? _session;
     if (_token.isNotEmpty) {
       _session = Token.fromJson(_token);

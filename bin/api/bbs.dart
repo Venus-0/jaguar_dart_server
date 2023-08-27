@@ -21,6 +21,8 @@ class BBS extends BaseApi {
   @override
   FutureOr<Response> method(String method) {
     if (method == "addBBS") return addBBS();
+    if (method == "addComment") return addComment();
+    if (method == "getBBSList") return getBBSList();
     return Response(body: jsonEncode({}), statusCode: Server.NOT_FOUND);
   }
 
@@ -43,7 +45,7 @@ class BBS extends BaseApi {
 
     String title = await get<String>("title");
     String content = await get<String>("content");
-    int type = await get<int>("type"); // 1问题2文章帖子
+    int type = await get<int>("type"); // 1问题2文章3帖子
 
     if (title.isEmpty) {
       responseBean.code = Server.ERROR;
@@ -57,7 +59,15 @@ class BBS extends BaseApi {
       return Response(statusCode: responseBean.code, body: responseBean.toJsonString());
     }
 
-    BBSModel _bbs = BBSModel(user_id: _user.user_id, title: title, content: content, question_type: type, create_time: DateTime.now());
+    final _now = DateTime.now();
+    BBSModel _bbs = BBSModel(
+      user_id: _user.user_id,
+      title: title,
+      content: content,
+      question_type: type,
+      create_time: _now,
+      update_time: _now,
+    );
     Map<String, dynamic> _bbsJson = _bbs.toJson();
     _bbsJson.remove("id");
 
@@ -75,6 +85,7 @@ class BBS extends BaseApi {
     }
   }
 
+  ///添加评论
   FutureOr<Response> addComment() async {
     ResponseBean responseBean = ResponseBean();
     if (!(await validateToken())) {
@@ -122,13 +133,14 @@ class BBS extends BaseApi {
       responseBean.msg = "${type == 1 ? '文章' : '帖子'}被删除或不存在";
       return Response(statusCode: responseBean.code, body: responseBean.toJsonString());
     }
-
+    final _now = DateTime.now();
     Map<String, dynamic> _commentModel = CommentModel(
       comment: comment,
       comment_id: comment_id,
       sub_comment_id: sub_comment_id != 0 ? sub_comment_id : null,
       comment_type: type,
-      create_time: DateTime.now(),
+      create_time: _now,
+      update_time: _now,
     ).toJson();
 
     _commentModel.remove("id");
@@ -151,5 +163,29 @@ class BBS extends BaseApi {
       responseBean.msg = "添加失败";
       return Response(statusCode: responseBean.code, body: responseBean.toJsonString());
     }
+  }
+
+  ///获取帖子
+  FutureOr<Response> getBBSList() async {
+    ResponseBean responseBean = ResponseBean();
+    if (!(await validateToken())) {
+      responseBean.code = Server.TOKEN_EXPIRED;
+      responseBean.msg = "身份验证过期";
+      return Response(statusCode: responseBean.code, body: responseBean.toJsonString());
+    }
+
+    GlobalDao _bbsDao = GlobalDao("posts");
+
+    List<Map<String, dynamic>> _postList = await _bbsDao.getList(where: [], order: "update_time DESC");
+    // List<Map<String, dynamic>> _postList = await _bbsDao.getList(where: [Where("delete_time", null)], order: "update_time DESC");
+    for (int i = 0; i < _postList.length; i++) {
+      BBSModel _bbsModel = BBSModel.fromJson(_postList[i]);
+      _postList[i] = _bbsModel.toJson();
+    }
+
+    responseBean.code = Server.SUCCESS;
+    responseBean.msg = "获取帖子列表成功";
+    responseBean.result = {"data": _postList};
+    return Response(statusCode: responseBean.code, body: responseBean.toJsonString());
   }
 }
