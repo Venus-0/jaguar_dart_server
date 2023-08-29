@@ -125,7 +125,7 @@ class GlobalDao {
     for (final row in _res) {
       _list.add(row.fields);
     }
-    print("[DAO][$tableName] SQL: $_sql  RES:$_list");
+    print("[DAO][$tableName] SQL: $_sql VALUE:$_whereList  RES:$_list");
     return _list;
   }
 
@@ -138,9 +138,13 @@ class GlobalDao {
     List<Object?> _whereList = [];
     String _set = '';
     value.forEach((key, value) {
-      _set += "$key = ? ";
+      _set += "$key = ? ,";
       _whereList.add(value);
     });
+
+    if (value.isNotEmpty) {
+      _set = _set.substring(0, _set.length - 1);
+    }
 
     String _where = "";
     if (where.isNotEmpty) {

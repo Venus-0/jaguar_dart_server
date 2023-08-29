@@ -2,9 +2,10 @@ import 'package:intl/intl.dart';
 
 ///评论数据模型
 class CommentModel {
-  static const int TYPE_BBS = 1; //帖子文章
-  static const int TYPE_QUESTION = 2; //问题评论（回答）
-  static const int TYPE_COMMENT = 4; //楼中楼
+  static const int TYPE_QUESTION = 1; //问题评论（回答）
+  static const int TYPE_WIKI = 2; //文章
+  static const int TYPE_POST = 3; //帖子
+  static const int TYPE_SUB_COMMENT = 4; //楼中楼
 
   int id; //评论id
   int comment_type; //评论类型 1帖子文章 2问题 3回答 4楼中楼
@@ -53,8 +54,8 @@ class CommentModel {
         'user_id': user_id,
         'comment': comment,
         'up_count': up_count,
-        'create_time': create_time == null ? null : DateFormat("yyyy-MM-dd").format(create_time!),
-        'delete_time': delete_time == null ? null : DateFormat("yyyy-MM-dd").format(delete_time!),
-        'update_time': update_time == null ? null : DateFormat("yyyy-MM-dd").format(update_time!),
+        'create_time': create_time == null ? null : DateFormat("yyyy-MM-dd HH:mm:ss").format(create_time!),
+        'delete_time': delete_time == null ? null : DateFormat("yyyy-MM-dd HH:mm:ss").format(delete_time!),
+        'update_time': update_time == null ? null : DateFormat("yyyy-MM-dd HH:mm:ss").format(update_time!),
       };
 }

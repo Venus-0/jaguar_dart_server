@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 class BBSModel {
   static const int TYPE_QUESTION = 1; //问题
   static const int TYPE_WIKI = 2; //文章
-  static const int TYPE_POST = 3; //文章
+  static const int TYPE_POST = 3; //帖子
 
   int id; //帖子id
   int user_id; //发帖人id

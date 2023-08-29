@@ -13,4 +13,9 @@ class Config {
   };
 
   static const int MAX_TOKEN_TIME = 30 * 24 * 60; //token最大有效期时间  单位分钟
+
+  static const Map<String, dynamic> emailSenderConfig = {
+    "userName": "",
+    "password": "",
+  };
 }

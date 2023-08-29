@@ -5,6 +5,7 @@ import 'package:jaguar/http/request/request.dart';
 import 'package:jaguar/http/response/response.dart';
 
 import '../db/global_dao.dart';
+import '../model/response.dart';
 import '../model/user_bean.dart';
 import '../server.dart';
 import '../model/token_model.dart';
@@ -14,6 +15,8 @@ abstract class BaseApi {
   BaseApi(this.ctx);
 
   FutureOr<Response> method(String method); //方法索引基类
+
+  Response get tokenExpired => Response(statusCode: Server.TOKEN_EXPIRED, body: ResponseBean(msg: "身份验证过期").toJsonString());
 
   Future<Token?> _getToken() async {
     String _token = ctx.headers.value("user") ?? "";

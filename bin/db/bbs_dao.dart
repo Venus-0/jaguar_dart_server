@@ -35,7 +35,7 @@ class BBSDao {
   Future<bool> addComment(int id) async {
     Map<String, dynamic> _postJson = await _globalDao.getOne(where: [Where("id", id)], column: ['reply_count']);
     if (_postJson.isEmpty) return false;
-    _postJson['up_count'] = (_postJson['reply_count'] ?? 0) + 1;
+    _postJson['reply_count'] = (_postJson['reply_count'] ?? 0) + 1;
     _postJson['update_time'] = DateFormat("yyyy-MM-dd HH:mm:ss").format(DateTime.now());
     bool _ret = await _globalDao.update(_postJson, where: [Where("id", id)]);
     return _ret;
@@ -45,7 +45,7 @@ class BBSDao {
   Future<bool> subComment(int id) async {
     Map<String, dynamic> _postJson = await _globalDao.getOne(where: [Where("id", id)], column: ['reply_count']);
     if (_postJson.isEmpty) return false;
-    _postJson['up_count'] = max<int>(0, (_postJson['reply_count'] ?? 0) + 1);
+    _postJson['reply_count'] = max<int>(0, (_postJson['reply_count'] ?? 0) + 1);
     _postJson['update_time'] = DateFormat("yyyy-MM-dd HH:mm:ss").format(DateTime.now());
     bool _ret = await _globalDao.update(_postJson, where: [Where("id", id)]);
     return _ret;

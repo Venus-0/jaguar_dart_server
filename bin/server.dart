@@ -49,7 +49,7 @@ class Server {
   FutureOr<dynamic> handler(Context ctx) async {
     print(ctx.uri.toString());
     print(ctx.uri.toString().split("/"));
-    List<String> _addres = ctx.uri.toString().split("/")..removeAt(0);
+    List<String> _addres = (ctx.uri.toString().split("?")[0].toString().split("/"))..removeAt(0);
 
     print(_addres);
     if (_addres.length < 3) {
