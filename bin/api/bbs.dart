@@ -9,9 +9,7 @@ import '../db/bbs_dao.dart';
 import '../db/global_dao.dart';
 import '../model/bbs_model.dart';
 import '../model/comment_model.dart';
-import '../model/response.dart';
 import '../model/user_bean.dart';
-import '../server.dart';
 import 'base_api.dart';
 
 ///论坛请求类
@@ -24,37 +22,24 @@ class BBS extends BaseApi {
     if (method == "addComment") return _addComment();
     if (method == "getBBSList") return _getBBSList();
     if (method == "getBBSComment") return _getBBSComment();
-    return Response(body: jsonEncode({}), statusCode: Server.NOT_FOUND);
+    return Response(body: jsonEncode({}), statusCode: NOT_FOUND);
   }
 
   ///添加帖子或问题
   FutureOr<Response> _addBBS() async {
-    ResponseBean responseBean = ResponseBean();
     if (!(await validateToken())) return tokenExpired;
 
     UserModel? _user = await getTokenUser();
 
-    if (_user == null) {
-      responseBean.code = Server.ERROR;
-      responseBean.msg = "未找到当前用户";
-      return Response(statusCode: responseBean.code, body: responseBean.toJsonString());
-    }
+    if (_user == null) return packData(ERROR, null, "未找到当前用户");
 
     String title = await get<String>("title");
     String content = await get<String>("content");
     int type = await get<int>("type"); // 1问题2文章3帖子
 
-    if (title.isEmpty) {
-      responseBean.code = Server.ERROR;
-      responseBean.msg = "标题不能为空";
-      return Response(statusCode: responseBean.code, body: responseBean.toJsonString());
-    }
+    if (title.isEmpty) return packData(ERROR, null, "标题不能为空");
 
-    if (content.isEmpty) {
-      responseBean.code = Server.ERROR;
-      responseBean.msg = "内容不能为空";
-      return Response(statusCode: responseBean.code, body: responseBean.toJsonString());
-    }
+    if (content.isEmpty) return packData(ERROR, null, "内容不能为空");
 
     final _now = DateTime.now();
     BBSModel _bbs = BBSModel(
@@ -72,39 +57,26 @@ class BBS extends BaseApi {
     bool _ret = await _bbsDao.insert(_bbsJson);
 
     if (_ret) {
-      responseBean.code = Server.SUCCESS;
-      responseBean.msg = "添加成功";
-      return Response(statusCode: responseBean.code, body: responseBean.toJsonString());
+      return packData(SUCCESS, null, "添加成功");
     } else {
-      responseBean.code = Server.ERROR;
-      responseBean.msg = "添加失败";
-      return Response(statusCode: responseBean.code, body: responseBean.toJsonString());
+      return packData(ERROR, null, "添加失败");
     }
   }
 
   ///添加评论
   FutureOr<Response> _addComment() async {
-    ResponseBean responseBean = ResponseBean();
     if (!(await validateToken())) return tokenExpired;
 
     UserModel? _user = await getTokenUser();
 
-    if (_user == null) {
-      responseBean.code = Server.ERROR;
-      responseBean.msg = "未找到当前用户";
-      return Response(statusCode: responseBean.code, body: responseBean.toJsonString());
-    }
+    if (_user == null) return packData(ERROR, null, "未找到当前用户");
 
     String comment = await get<String>("comment");
     int comment_id = await get<int>("comment_id");
     int sub_comment_id = await get<int>("sub_comment_id");
     int type = await get<int>("type");
 
-    if (comment.isEmpty) {
-      responseBean.code = Server.ERROR;
-      responseBean.msg = "评论不能为空";
-      return Response(statusCode: responseBean.code, body: responseBean.toJsonString());
-    }
+    if (comment.isEmpty) return packData(ERROR, null, "评论不能为空");
 
     GlobalDao _bbsDao = GlobalDao("posts");
     GlobalDao _commentDao = GlobalDao("comment");
@@ -112,19 +84,13 @@ class BBS extends BaseApi {
     ///TODO:楼中楼的话判断是否评论被删除
     if (type == CommentModel.TYPE_SUB_COMMENT) {
       Map<String, dynamic> _commentInComment = await _commentDao.getOne(where: [Where("id", comment_id), Where("delete_time", null, "is")]);
-      if (_commentInComment.isEmpty) {
-        responseBean.code = Server.ERROR;
-        responseBean.msg = "评论被删除或不存在";
-        return Response(statusCode: responseBean.code, body: responseBean.toJsonString());
-      }
+      if (_commentInComment.isEmpty) return packData(ERROR, null, "评论被删除或不存在");
     }
 
     ///统一判断帖子是否被删除
     Map<String, dynamic> _bbsComment = await _bbsDao.getOne(where: [Where("id", comment_id)]);
     if (_bbsComment.isEmpty || _bbsComment['delete_time'] != null) {
-      responseBean.code = Server.ERROR;
-      responseBean.msg = "${type == 1 ? '文章' : '帖子'}被删除或不存在";
-      return Response(statusCode: responseBean.code, body: responseBean.toJsonString());
+      return packData(ERROR, null, "${type == 1 ? '文章' : '帖子'}被删除或不存在");
     }
     final _now = DateTime.now();
     Map<String, dynamic> _commentModel = CommentModel(
@@ -149,19 +115,14 @@ class BBS extends BaseApi {
         await _bbsDao.addComment(comment_id);
       }
 
-      responseBean.code = Server.SUCCESS;
-      responseBean.msg = "添加成功";
-      return Response(statusCode: responseBean.code, body: responseBean.toJsonString());
+      return packData(SUCCESS, null, "添加成功");
     } else {
-      responseBean.code = Server.ERROR;
-      responseBean.msg = "添加失败";
-      return Response(statusCode: responseBean.code, body: responseBean.toJsonString());
+      return packData(ERROR, null, "添加失败");
     }
   }
 
   ///获取帖子列表
   FutureOr<Response> _getBBSList() async {
-    ResponseBean responseBean = ResponseBean();
     if (!(await validateToken())) return tokenExpired;
 
     GlobalDao _bbsDao = GlobalDao("posts");
@@ -172,15 +133,11 @@ class BBS extends BaseApi {
       _postList[i] = _bbsModel.toJson();
     }
 
-    responseBean.code = Server.SUCCESS;
-    responseBean.msg = "获取帖子列表成功";
-    responseBean.result = {"data": _postList};
-    return Response(statusCode: responseBean.code, body: responseBean.toJsonString());
+    return packData(SUCCESS, {"data": _postList}, "获取帖子列表成功");
   }
 
   ///获取评论
   FutureOr<Response> _getBBSComment() async {
-    ResponseBean responseBean = ResponseBean();
     if (!(await validateToken())) return tokenExpired;
     int _id = await get<int>("id"); //文章，帖子，问答id
     int _page = await get<int>("page"); //第几页
@@ -198,9 +155,7 @@ class BBS extends BaseApi {
     GlobalDao _bbsDao = GlobalDao('posts');
     Map<String, dynamic> _bbsJson = await _bbsDao.getOne(where: [Where("id", _id)]);
     if (_bbsJson.isEmpty) {
-      responseBean.code = Server.ERROR;
-      responseBean.msg = "查无此贴";
-      return Response(statusCode: responseBean.code, body: responseBean.toJsonString());
+      return packData(ERROR, null, "查无此贴");
     }
     BBSModel _bbs = BBSModel.fromJson(_bbsJson);
 
@@ -255,9 +210,25 @@ class BBS extends BaseApi {
       });
     }
 
-    responseBean.code = Server.SUCCESS;
-    responseBean.msg = "获取评论列表成功";
-    responseBean.result = {"list": _listWithComment};
-    return Response(statusCode: responseBean.code, body: responseBean.toJsonString());
+    return packData(SUCCESS, {"list": _listWithComment}, "获取评论列表成功");
+  }
+
+  ///获取当前用户点赞状态
+  FutureOr<Response> _getLike() async {
+    if (!(await validateToken())) return tokenExpired;
+    UserModel? _user = await getTokenUser();
+    if (_user == null) return userNotFind;
+
+    int _id = await get<int>("id");
+    int _type = await get<int>("type");
+
+    GlobalDao _like = GlobalDao("like");
+
+    Map<String, dynamic> _likeMap = await _like.getOne(
+      where: [Where('up_id', _id), Where("user_id", _user.user_id), Where("up_type", _type), Where("delete", null, "IS")],
+      order: "create_time DESC",
+    );
+
+    return packData(SUCCESS, _likeMap, "获取点赞信息成功");
   }
 }

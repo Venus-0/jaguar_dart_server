@@ -3,16 +3,13 @@ import 'dart:convert';
 
 import 'package:jaguar/jaguar.dart';
 
+import 'api/admin.dart';
 import 'api/base_api.dart';
 import 'api/bbs.dart';
 import 'api/common.dart';
 import 'api/user.dart';
 
 class Server {
-  static const int ERROR = 403;
-  static const int SUCCESS = 200;
-  static const int NOT_FOUND = 404;
-  static const int TOKEN_EXPIRED = 401;
   static const int port = 8080;
   static const String GET = "GET";
   static const String POST = "POST";
@@ -32,11 +29,12 @@ class Server {
     if (method == "user") return User(ctx);
     if (method == "common") return Common(ctx);
     if (method == "bbs") return BBS(ctx);
+    if (method == "admin") return Admin(ctx);
   }
 
   Future<void> initServer() async {
     if (server == null && !isInit) {
-      server = new Jaguar(address: '0.0.0.0', port: port)
+      server = new Jaguar(address: '127.0.0.1', port: port)
         // ..staticFiles("/*", 'bin')
         ..post('/api/*', handler)
         ..get('/api/*', handler);
@@ -53,7 +51,7 @@ class Server {
 
     print(_addres);
     if (_addres.length < 3) {
-      ctx.response = Response(body: jsonEncode({}), statusCode: NOT_FOUND);
+      ctx.response = Response(body: jsonEncode({}), statusCode: 404);
       return;
     }
     String _keyMethod = _addres[1];
@@ -67,7 +65,7 @@ class Server {
     if (_response != null) {
       ctx.response = _response;
     } else {
-      ctx.response = Response(body: jsonEncode({}), statusCode: NOT_FOUND);
+      ctx.response = Response(body: jsonEncode({}), statusCode: 404);
     }
   }
 

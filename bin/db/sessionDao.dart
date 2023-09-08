@@ -1,9 +1,7 @@
 import 'dart:collection';
 import 'package:intl/intl.dart';
-import 'package:mysql1/mysql1.dart';
 import '../model/token_model.dart';
 import 'global_dao.dart';
-import 'mysql.dart';
 
 ///session管理
 class SessionDao {
@@ -45,7 +43,7 @@ class SessionDao {
   ///查询session
   Future<Token?> querySession(int user_id) async {
     Map<String, dynamic> _token =
-        await globalDao.getOne(where: [Where("user_id", user_id), Where("disable_time", null)], order: "update_time DESC");
+        await globalDao.getOne(where: [Where("user_id", user_id), Where("disable_time", null, 'IS')], order: "update_time DESC");
     Token? _session;
     if (_token.isNotEmpty) {
       _session = Token.fromJson(_token);

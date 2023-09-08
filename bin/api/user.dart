@@ -10,7 +10,6 @@ import '../db/sessionDao.dart';
 import '../model/mail_model.dart';
 import '../model/response.dart';
 import '../model/user_bean.dart';
-import '../server.dart';
 import '../utils/mail_utils.dart';
 import 'base_api.dart';
 
@@ -23,11 +22,10 @@ class User extends BaseApi {
     if (method == "register") return await _register();
     // if (method == "validateCode") return await _validateCode();
 
-    return Response(body: jsonEncode({}), statusCode: Server.NOT_FOUND);
+    return Response(body: jsonEncode({}), statusCode: NOT_FOUND);
   }
 
   FutureOr<Response> _login() async {
-    ResponseBean responseBean = ResponseBean();
     String email = "";
     String pwd = "";
     String device = "";
@@ -40,14 +38,10 @@ class User extends BaseApi {
     }
 
     if (email.isEmpty) {
-      responseBean.code = Server.ERROR;
-      responseBean.msg = "账号不能为空";
-      return Response(statusCode: responseBean.code, body: responseBean.toJsonString());
+      return packData(ERROR, null, '账号不能为空');
     }
     if (pwd.isEmpty) {
-      responseBean.code = Server.ERROR;
-      responseBean.msg = "密码不能为空";
-      return Response(statusCode: responseBean.code, body: responseBean.toJsonString());
+      return packData(ERROR, null, '密码不能为空');
     }
 
     pwd = md5.convert(pwd.codeUnits).toString();
@@ -60,19 +54,13 @@ class User extends BaseApi {
     }
 
     if (user == null) {
-      responseBean.code = Server.ERROR;
-      responseBean.msg = "账户或密码错误";
-      return Response(statusCode: responseBean.code, body: responseBean.toJsonString());
+      return packData(ERROR, null, '账户或密码错误');
     } else {
       if (user.password != pwd) {
-        responseBean.code = Server.ERROR;
-        responseBean.msg = "账户或密码错误";
-        return Response(statusCode: responseBean.code, body: responseBean.toJsonString());
+        return packData(ERROR, null, '账户或密码错误');
       } else {
         String session = await SessionDao().loginSession(user.user_id, pwd, device);
-        responseBean.result = {"user": user.toJson(), 'token': session};
-        responseBean.msg = "登陆成功";
-        return Response(statusCode: responseBean.code, body: responseBean.toJsonString(), headers: {"Set-Cookie": "userSession=$session"});
+        return packData(SUCCESS, {"user": user.toJson(), 'token': session}, '登陆成功');
       }
     }
   }
@@ -91,9 +79,7 @@ class User extends BaseApi {
     ///判断邮箱是否已经注册
     Map<String, dynamic> _checkUser = await _globalDao.getOne(where: [Where("email", email)]);
     if (_checkUser.isNotEmpty) {
-      responseBean.code = Server.ERROR;
-      responseBean.msg = "当前邮箱已注册";
-      return Response(statusCode: responseBean.code, body: responseBean.toJsonString());
+      return packData(ERROR, null, '当前邮箱已注册');
     }
 
     Map<String, dynamic> _userJson = _user.toJson();
@@ -102,13 +88,9 @@ class User extends BaseApi {
     _userJson['update_time'] = DateFormat("yyyy-MM-dd").format(DateTime.now());
     bool _ret = await _globalDao.insert(_userJson);
     if (_ret) {
-      responseBean.result = {'user': jsonEncode(_user.toJson())};
-      responseBean.msg = "注册成功";
-      return Response(statusCode: responseBean.code, body: responseBean.toJsonString());
+      return packData(SUCCESS, {'user': jsonEncode(_user.toJson())}, '注册成功');
     } else {
-      responseBean.code = Server.ERROR;
-      responseBean.msg = "注册失败";
-      return Response(statusCode: responseBean.code, body: responseBean.toJsonString());
+      return packData(ERROR, null, '注册失败');
     }
   }
 
@@ -123,7 +105,7 @@ class User extends BaseApi {
     ResponseBean responseBean = ResponseBean();
 
     if (_user.isEmpty) {
-      responseBean.code = Server.ERROR;
+      responseBean.code = ERROR;
       responseBean.msg = "该邮箱未注册账号";
       return Response(statusCode: responseBean.code, body: responseBean.toJsonString());
     } else {
@@ -131,11 +113,11 @@ class User extends BaseApi {
       MailModel _mailModel = MailModel(address: email, subject: "这是一条测试", text: "这是一条测试右键", html: "<h1>测试测试</h1>");
       bool _ret = await _mailSender.sendMail(_mailModel);
       if (_ret) {
-        responseBean.code = Server.SUCCESS;
+        responseBean.code = SUCCESS;
         responseBean.msg = "发送成功";
         return Response(statusCode: responseBean.code, body: responseBean.toJsonString());
       } else {
-        responseBean.code = Server.ERROR;
+        responseBean.code = ERROR;
         responseBean.msg = "发送失败";
         return Response(statusCode: responseBean.code, body: responseBean.toJsonString());
       }

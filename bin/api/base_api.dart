@@ -1,10 +1,12 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:jaguar/http/context/context.dart';
 import 'package:jaguar/http/request/request.dart';
 import 'package:jaguar/http/response/response.dart';
 
 import '../db/global_dao.dart';
+import '../model/admin_user_model.dart';
 import '../model/response.dart';
 import '../model/user_bean.dart';
 import '../server.dart';
@@ -14,12 +16,27 @@ abstract class BaseApi {
   final Context ctx;
   BaseApi(this.ctx);
 
+  final int ERROR = 403;
+  final int SUCCESS = 200;
+  final int NOT_FOUND = 404;
+  final int TOKEN_EXPIRED = 401;
+
   FutureOr<Response> method(String method); //方法索引基类
 
-  Response get tokenExpired => Response(statusCode: Server.TOKEN_EXPIRED, body: ResponseBean(msg: "身份验证过期").toJsonString());
+  Response get tokenExpired => Response(statusCode: TOKEN_EXPIRED, body: ResponseBean(msg: "身份验证过期").toJsonString());
+  Response get userNotFind => Response(statusCode: ERROR, body: ResponseBean(msg: "未找到当前用户").toJsonString());
+  Response get pageNotFound => Response(body: jsonEncode({}), statusCode: NOT_FOUND);
+
+  Response packData(int code, dynamic data, String msg) {
+    ResponseBean responseBean = ResponseBean();
+    responseBean.code = code;
+    responseBean.msg = msg;
+    responseBean.result = data ?? {};
+    return Response(statusCode: responseBean.code, body: responseBean.toJsonString());
+  }
 
   Future<Token?> _getToken() async {
-    String _token = ctx.headers.value("user") ?? "";
+    String _token = ctx.headers.value("Authorization") ?? "";
     print("getToken:$_token");
     if (_token.isEmpty) {
       return null;
@@ -29,6 +46,7 @@ abstract class BaseApi {
     if (_tokenRecord.isNotEmpty) {
       return Token.fromJson(_tokenRecord);
     }
+    return null;
   }
 
   Future<bool> validateToken() async {
@@ -49,6 +67,17 @@ abstract class BaseApi {
 
     if (_userJson.isEmpty) return null;
     return UserModel.fromJson(_userJson);
+  }
+
+  Future<AdminUserModel?> getTokenAdmin() async {
+    Token? _token = await _getToken();
+    if ((_token?.user_id ?? 0) == 0) {
+      return null;
+    }
+    GlobalDao _adminDao = GlobalDao("admin_user");
+    Map<String, dynamic> _adminJson = await _adminDao.getOne(where: [Where("admin_id", _token!.user_id)]);
+    if (_adminJson.isEmpty) return null;
+    return AdminUserModel.fromJson(_adminJson);
   }
 
   ///获取参数基类

@@ -66,7 +66,7 @@ class GlobalDao {
     if (limit != null) {
       _sql += " LIMIT ${limit.start},${limit.limit}";
     }
-    print("[DAO][$tableName] SQL: $_sql");
+    print("[DAO][$tableName] SQL: $_sql  $_whereList");
     Results _res = await conn.query(_sql, _whereList);
     if (_res.isEmpty) {
       return {};
