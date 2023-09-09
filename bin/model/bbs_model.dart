@@ -5,6 +5,7 @@ class BBSModel {
   static const int TYPE_QUESTION = 1; //问题
   static const int TYPE_WIKI = 2; //文章
   static const int TYPE_POST = 3; //帖子
+  static const List<int> TYPE_LIST = [TYPE_QUESTION, TYPE_WIKI, TYPE_POST];
 
   int id; //帖子id
   int user_id; //发帖人id
@@ -56,9 +57,9 @@ class BBSModel {
         'question_type': question_type,
         'reply_count': reply_count,
         'up_count': up_count,
-        'last_reply_time': last_reply_time == null ? null : DateFormat("yyyy-MM-dd").format(last_reply_time!),
-        'create_time': create_time == null ? null : DateFormat("yyyy-MM-dd").format(create_time!),
-        'delete_time': delete_time == null ? null : DateFormat("yyyy-MM-dd").format(delete_time!),
-        'update_time': update_time == null ? null : DateFormat("yyyy-MM-dd").format(update_time!),
+        'last_reply_time': last_reply_time == null ? null : DateFormat("yyyy-MM-dd HH:mm:ss").format(last_reply_time!),
+        'create_time': create_time == null ? null : DateFormat("yyyy-MM-dd HH:mm:ss").format(create_time!),
+        'delete_time': delete_time == null ? null : DateFormat("yyyy-MM-dd HH:mm:ss").format(delete_time!),
+        'update_time': update_time == null ? null : DateFormat("yyyy-MM-dd HH:mm:ss").format(update_time!),
       };
 }

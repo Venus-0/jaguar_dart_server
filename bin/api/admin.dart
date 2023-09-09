@@ -9,7 +9,7 @@ import '../db/sessionDao.dart';
 import '../model/admin_user_model.dart';
 import '../model/bbs_model.dart';
 import '../model/comment_model.dart';
-import '../model/user_bean.dart';
+import '../model/user_model.dart';
 import 'base_api.dart';
 
 class Admin extends BaseApi {
@@ -24,6 +24,7 @@ class Admin extends BaseApi {
     if (method == 'getUserList') return _getUserList(); //获取用户列表
     if (method == 'getUserPosts') return _getUserPosts(); //获取用户发帖列表
     if (method == 'getUserComment') return _getUserComment(); //获取用户评论列表
+    if (method == 'getPostList') return _getPostList(); //获取帖子列表
     return pageNotFound;
   }
 
@@ -78,7 +79,7 @@ class Admin extends BaseApi {
     int _page = await get<int>("page");
     int _pageSize = await get<int>("pageSize");
     String _email = await get<String>("email");
-    String _userName = await get<String>("userName");
+    String _userName = await get<String>("username");
     GlobalDao _userDao = GlobalDao("user");
     if (_page < 1) {
       _page = 1;
@@ -98,7 +99,8 @@ class Admin extends BaseApi {
     }
 
     Map<String, dynamic> _count = await _userDao.getOne(column: ["COUNT(*)"], where: _where);
-    List<Map<String, dynamic>> _ret = await _userDao.getList(limit: Limit(limit: _page, start: _page - 1), where: _where);
+    List<Map<String, dynamic>> _ret =
+        await _userDao.getList(limit: Limit(limit: _pageSize, start: _page - 1), where: _where, order: "update_time DESC");
 
     int _totalPage = (((_count['COUNT(*)'] ?? 0) as int) / _pageSize).ceil();
     Map<String, dynamic> _pageInfo = {
@@ -115,6 +117,7 @@ class Admin extends BaseApi {
     return packData(SUCCESS, _data, "获取用户列表成功");
   }
 
+  ///获取用户发帖列表
   FutureOr<Response> _getUserPosts() async {
     if (!(await validateToken())) return tokenExpired;
     String _userId = await get<String>("user_id");
@@ -151,6 +154,7 @@ class Admin extends BaseApi {
     return packData(SUCCESS, _data, "获取用户帖子列表成功");
   }
 
+  ///获取用户评论列表
   FutureOr<Response> _getUserComment() async {
     if (!(await validateToken())) return tokenExpired;
     String _userId = await get<String>("user_id");
@@ -185,5 +189,48 @@ class Admin extends BaseApi {
     _data['page'] = _pageInfo;
 
     return packData(SUCCESS, _data, "获取用户评论列表成功");
+  }
+
+  ///
+  FutureOr<Response> _getPostList() async {
+    if (!(await validateToken())) return tokenExpired;
+    int _type = await get<int>("type");
+    int _page = await get<int>("page");
+    int _pageSize = await get<int>("pageSize");
+    if (!BBSModel.TYPE_LIST.contains(_type)) {
+      _type = 0;
+    }
+    if (_page < 1) {
+      _page = 1;
+    }
+
+    if (_pageSize == 0) {
+      _pageSize = 10;
+    }
+
+    List<Where> _where = [];
+
+    if (_type != 0) {
+      _where.add(Where("question_type", _type));
+    }
+
+    GlobalDao _bbsDao = GlobalDao("posts");
+
+    Map<String, dynamic> _count = await _bbsDao.getOne(column: ["COUNT(*)"], where: _where);
+    List<Map<String, dynamic>> _list =
+        await _bbsDao.getList(where: _where, order: "create_time DESC", limit: Limit(limit: _pageSize, start: _page - 1));
+    int _totalPage = (((_count['COUNT(*)'] ?? 0) as int) / _pageSize).ceil();
+    Map<String, dynamic> _pageInfo = {
+      "total": _totalPage,
+      "currentPage": _page,
+      "pageSize": _pageSize,
+    };
+
+    Map<String, dynamic> _data = {};
+
+    _data['data'] = List.generate(_list.length, (index) => BBSModel.fromJson(_list[index]).toJson());
+    _data['page'] = _pageInfo;
+
+    return packData(SUCCESS, _data, "获取帖子列表成功");
   }
 }

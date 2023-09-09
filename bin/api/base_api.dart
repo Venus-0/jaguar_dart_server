@@ -8,7 +8,7 @@ import 'package:jaguar/http/response/response.dart';
 import '../db/global_dao.dart';
 import '../model/admin_user_model.dart';
 import '../model/response.dart';
-import '../model/user_bean.dart';
+import '../model/user_model.dart';
 import '../server.dart';
 import '../model/token_model.dart';
 

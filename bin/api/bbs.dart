@@ -9,7 +9,7 @@ import '../db/bbs_dao.dart';
 import '../db/global_dao.dart';
 import '../model/bbs_model.dart';
 import '../model/comment_model.dart';
-import '../model/user_bean.dart';
+import '../model/user_model.dart';
 import 'base_api.dart';
 
 ///论坛请求类

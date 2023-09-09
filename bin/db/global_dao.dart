@@ -43,7 +43,7 @@ class GlobalDao {
             _where += '`${_value.key}` IN (${List.generate((_value.value as List).length, (index) => "?").join(",")})';
             _whereList.addAll(_value.value as List);
           } else if (_value.operator == "LIKE") {
-            _where += "`${_value.key}` LIKE ${_value.value}";
+            _where += '`${_value.key}` LIKE "${_value.value}"';
           } else {
             _where += "`${_value.key}` ${_value.operator} ${_value.value}";
           }
@@ -97,7 +97,7 @@ class GlobalDao {
             _where += '`${_value.key}` IN (${List.generate((_value.value as List).length, (index) => "?").join(",")})';
             _whereList.addAll(_value.value as List);
           } else if (_value.operator == "LIKE") {
-            _where += "`${_value.key}` LIKE ${_value.value}";
+            _where += '`${_value.key}` LIKE "${_value.value}"';
           } else {
             _where += "`${_value.key}` ${_value.operator} ${_value.value}";
           }
@@ -120,6 +120,7 @@ class GlobalDao {
     if (limit != null) {
       _sql += " LIMIT ${limit.start},${limit.limit}";
     }
+    print("[DAO][$tableName] SQL: $_sql VALUE:$_whereList ");
     Results _res = await conn.query(_sql, _whereList);
     List<Map<String, dynamic>> _list = [];
     for (final row in _res) {

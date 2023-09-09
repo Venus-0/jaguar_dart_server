@@ -9,7 +9,7 @@ import '../db/global_dao.dart';
 import '../db/sessionDao.dart';
 import '../model/mail_model.dart';
 import '../model/response.dart';
-import '../model/user_bean.dart';
+import '../model/user_model.dart';
 import '../utils/mail_utils.dart';
 import 'base_api.dart';
 
@@ -84,8 +84,8 @@ class User extends BaseApi {
 
     Map<String, dynamic> _userJson = _user.toJson();
     _userJson.remove("user_id");
-    _userJson['create_time'] = DateFormat("yyyy-MM-dd").format(DateTime.now());
-    _userJson['update_time'] = DateFormat("yyyy-MM-dd").format(DateTime.now());
+    _userJson['create_time'] = DateFormat("yyyy-MM-dd HH:mm:ss").format(DateTime.now());
+    _userJson['update_time'] = DateFormat("yyyy-MM-dd HH:mm:ss").format(DateTime.now());
     bool _ret = await _globalDao.insert(_userJson);
     if (_ret) {
       return packData(SUCCESS, {'user': jsonEncode(_user.toJson())}, '注册成功');
