@@ -25,7 +25,7 @@ abstract class BaseApi {
 
   Response get tokenExpired => Response(statusCode: TOKEN_EXPIRED, body: ResponseBean(msg: "身份验证过期").toJsonString());
   Response get userNotFind => Response(statusCode: ERROR, body: ResponseBean(msg: "未找到当前用户").toJsonString());
-  Response get pageNotFound => Response(body: jsonEncode({}), statusCode: NOT_FOUND);
+  Response get pageNotFound => Response(body: jsonEncode({"code": 404, "msg": "未定义的路由", "result": null}), statusCode: NOT_FOUND);
 
   Response packData(int code, dynamic data, String msg) {
     ResponseBean responseBean = ResponseBean();

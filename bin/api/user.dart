@@ -70,7 +70,6 @@ class User extends BaseApi {
     String email = await get<String>("email");
     String password = await get<String>("password");
     GlobalDao _globalDao = GlobalDao("user");
-    ResponseBean responseBean = ResponseBean();
 
     ///密码加密
     password = md5.convert(password.codeUnits).toString();

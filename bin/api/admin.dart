@@ -1,4 +1,7 @@
+import 'dart:collection';
+
 import 'package:crypto/crypto.dart';
+import 'package:intl/intl.dart';
 import 'package:jaguar/http/context/context.dart';
 import 'package:jaguar/http/response/response.dart';
 
@@ -25,6 +28,8 @@ class Admin extends BaseApi {
     if (method == 'getUserPosts') return _getUserPosts(); //获取用户发帖列表
     if (method == 'getUserComment') return _getUserComment(); //获取用户评论列表
     if (method == 'getPostList') return _getPostList(); //获取帖子列表
+    if (method == 'banUser') return _banUser(); //封禁用户
+    if (method == 'activeUser') return _activeUser(); //重新启用被封禁的用户
     return pageNotFound;
   }
 
@@ -191,7 +196,7 @@ class Admin extends BaseApi {
     return packData(SUCCESS, _data, "获取用户评论列表成功");
   }
 
-  ///
+  ///获取帖子列表
   FutureOr<Response> _getPostList() async {
     if (!(await validateToken())) return tokenExpired;
     int _type = await get<int>("type");
@@ -232,5 +237,53 @@ class Admin extends BaseApi {
     _data['page'] = _pageInfo;
 
     return packData(SUCCESS, _data, "获取帖子列表成功");
+  }
+
+  ///封禁用户
+  FutureOr<Response> _banUser() async {
+    if (!(await validateToken())) return tokenExpired;
+    int _userId = await get<int>("user_id");
+    GlobalDao _userDao = GlobalDao("user");
+
+    ///查询用户是否存在和封禁状态
+    Map<String, dynamic> _userJson = await _userDao.getOne(where: [Where("user_id", _userId)]);
+
+    if (_userJson.isEmpty || _userJson['disable_time'] != null) {
+      return packData(ERROR, null, "该用户不存在或已被封禁");
+    }
+
+    HashMap<String, dynamic> _modiyfMap = HashMap();
+    _modiyfMap['disable_time'] = DateFormat("yyyy-MM-dd HH:mm:ss").format(DateTime.now());
+
+    bool _ret = await _userDao.update(_modiyfMap, where: [Where("user_id", _userId)]);
+    if (_ret) {
+      return packData(SUCCESS, null, "OK");
+    } else {
+      return packData(ERROR, null, "封禁失败");
+    }
+  }
+
+  ///重新启用被封禁的账号
+  FutureOr<Response> _activeUser() async {
+    if (!(await validateToken())) return tokenExpired;
+    int _userId = await get<int>("user_id");
+    GlobalDao _userDao = GlobalDao("user");
+
+    ///查询用户是否存在和封禁状态
+    Map<String, dynamic> _userJson = await _userDao.getOne(where: [Where("user_id", _userId)]);
+
+    if (_userJson.isEmpty || _userJson['disable_time'] != null) {
+      return packData(ERROR, null, "该用户不存在或未被封禁");
+    }
+
+    HashMap<String, dynamic> _modiyfMap = HashMap();
+    _modiyfMap['disable_time'] = null;
+
+    bool _ret = await _userDao.update(_modiyfMap, where: [Where("user_id", _userId)]);
+    if (_ret) {
+      return packData(SUCCESS, null, "OK");
+    } else {
+      return packData(ERROR, null, "解除封禁失败");
+    }
   }
 }

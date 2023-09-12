@@ -65,7 +65,7 @@ class Server {
     if (_response != null) {
       ctx.response = _response;
     } else {
-      ctx.response = Response(body: jsonEncode({}), statusCode: 404);
+      ctx.response = Response(body: jsonEncode({"code": 404, "msg": "未定义的路由", "result": null}), statusCode: 404);
     }
   }
 
