@@ -22,6 +22,7 @@ class BBS extends BaseApi {
     if (method == "addComment") return _addComment();
     if (method == "getBBSList") return _getBBSList();
     if (method == "getBBSComment") return _getBBSComment();
+    if (method == "getBBSDetail") return _getBBSDetail();
     return Response(body: jsonEncode({}), statusCode: NOT_FOUND);
   }
 
@@ -82,13 +83,17 @@ class BBS extends BaseApi {
     GlobalDao _commentDao = GlobalDao("comment");
 
     ///TODO:楼中楼的话判断是否评论被删除
+    Map<String, dynamic> _commentInComment = {};
     if (type == CommentModel.TYPE_SUB_COMMENT) {
-      Map<String, dynamic> _commentInComment = await _commentDao.getOne(where: [Where("id", comment_id), Where("delete_time", null, "is")]);
+      _commentInComment = await _commentDao.getOne(where: [Where("id", comment_id), Where("delete_time", null, "is")]);
       if (_commentInComment.isEmpty) return packData(ERROR, null, "评论被删除或不存在");
     }
 
+    print(" comment   $_commentInComment");
+
     ///统一判断帖子是否被删除
-    Map<String, dynamic> _bbsComment = await _bbsDao.getOne(where: [Where("id", comment_id)]);
+    Map<String, dynamic> _bbsComment =
+        await _bbsDao.getOne(where: [Where("id", type == CommentModel.TYPE_SUB_COMMENT ? _commentInComment['comment_id'] : comment_id)]);
     if (_bbsComment.isEmpty || _bbsComment['delete_time'] != null) {
       return packData(ERROR, null, "${type == 1 ? '文章' : '帖子'}被删除或不存在");
     }
@@ -105,8 +110,8 @@ class BBS extends BaseApi {
 
     _commentModel.remove("id");
 
-    bool _ret = await _commentDao.insert(_commentModel);
-    if (_ret) {
+    int _ret = await _commentDao.insertReturnId(_commentModel);
+    if (_ret > 0) {
       ///TODO：帖子回复数量+1
       if (type == CommentModel.TYPE_SUB_COMMENT) {
         //楼中楼暂不计入回复数量
@@ -115,7 +120,7 @@ class BBS extends BaseApi {
         await _bbsDao.addComment(comment_id);
       }
 
-      return packData(SUCCESS, null, "添加成功");
+      return packData(SUCCESS, {"id": _ret}, "添加成功");
     } else {
       return packData(ERROR, null, "添加失败");
     }
@@ -126,29 +131,46 @@ class BBS extends BaseApi {
     if (!(await validateToken())) return tokenExpired;
 
     GlobalDao _bbsDao = GlobalDao("posts");
+    int _type = await get<int>("type");
+    int _startIndex = await get<int>("startIndex"); //从第几条数据开始
+    int _pageSize = await get<int>("pageSize"); //每次返回多少条数据
 
-    List<Map<String, dynamic>> _postList = await _bbsDao.getList(where: [Where("delete_time", null, "is")], order: "update_time DESC");
+    if (_pageSize == 0) {
+      _pageSize = 10;
+    }
+
+    List<Where> _where = [];
+    if (BBSModel.TYPE_LIST.contains(_type)) {
+      _where.add(Where('question_type', _type));
+    }
+    _where.add(Where("delete_time", null, "is"));
+    Map<String, dynamic> _countRet = await _bbsDao.getOne(column: ["COUNT(*)"], where: _where);
+
+    List<Map<String, dynamic>> _postList =
+        await _bbsDao.getList(where: _where, order: "update_time DESC", limit: Limit(limit: _pageSize, start: _startIndex));
     for (int i = 0; i < _postList.length; i++) {
       BBSModel _bbsModel = BBSModel.fromJson(_postList[i]);
       _postList[i] = _bbsModel.toJson();
     }
 
-    return packData(SUCCESS, {"data": _postList}, "获取帖子列表成功");
+    Map<String, dynamic> _pageInfo = {
+      "total": ((_countRet['COUNT(*)'] ?? 0) as int), //总共有多少条数据
+      "returnDataCount": _postList.length, //本次返回多少数据
+      "pageSize": _pageSize, //每次应该返回多少条数据
+    };
+
+    return packData(SUCCESS, {"data": _postList, "page": _pageInfo}, "获取帖子列表成功");
   }
 
   ///获取评论
   FutureOr<Response> _getBBSComment() async {
     if (!(await validateToken())) return tokenExpired;
     int _id = await get<int>("id"); //文章，帖子，问答id
-    int _page = await get<int>("page"); //第几页
+    int _startIndex = await get<int>("startIndex"); //从第几条数据开始查询
     int _pageSize = await get<int>("pageSize"); //一次返回多少条数据
 
     if (_pageSize == 0) {
       _pageSize = 10;
-    }
-
-    if (_page - 1 < 0) {
-      _page = 1;
     }
 
     ///查贴
@@ -161,10 +183,15 @@ class BBS extends BaseApi {
 
     ///查评论
     GlobalDao _commentDao = GlobalDao("comment");
+    Map<String, dynamic> _pageCount = await _commentDao.getOne(
+      column: ["COUNT(*)"],
+      where: [Where("comment_id", _bbs.id), Where("comment_type", _bbs.question_type)],
+    );
+
     List<Map<String, dynamic>> _list = await _commentDao.getList(
       where: [Where("comment_id", _bbs.id), Where("comment_type", _bbs.question_type)],
-      limit: Limit(limit: _pageSize, start: (_page - 1) * _pageSize),
-      order: "create_time DESC",
+      limit: Limit(limit: _pageSize, start: _startIndex),
+      order: "create_time ASC",
     );
 
     GlobalDao _userDao = GlobalDao("user");
@@ -172,7 +199,6 @@ class BBS extends BaseApi {
     ///查楼中楼
     List<Map<String, dynamic>> _listWithComment = [];
     for (Map<String, dynamic> _commentMap in _list) {
-      ///每层默认显示两条楼中楼
       CommentModel _comment = CommentModel.fromJson(_commentMap);
       List<Map<String, dynamic>> _subCommentList = await _commentDao.getList(
         where: [
@@ -180,8 +206,8 @@ class BBS extends BaseApi {
           Where("comment_type", CommentModel.TYPE_SUB_COMMENT),
           Where("delete_time", null, "IS"),
         ],
-        limit: Limit(limit: 2),
-        order: "create_time DESC",
+        // limit: Limit(limit: 2),
+        order: "create_time ASC",
       );
 
       ///查用户
@@ -205,12 +231,18 @@ class BBS extends BaseApi {
 
       _listWithComment.add({
         "user": _user,
-        "commnet": _comment.toJson(),
+        "comment": _comment.toJson(),
         "subComment": _subCommentList,
       });
     }
 
-    return packData(SUCCESS, {"list": _listWithComment}, "获取评论列表成功");
+    Map<String, dynamic> _pageInfo = {
+      "total": ((_pageCount['COUNT(*)'] ?? 0) as int), //总共有多少条数据
+      "returnDataCount": _listWithComment.length, //本次返回多少数据
+      "pageSize": _pageSize, //每次应该返回多少条数据
+    };
+
+    return packData(SUCCESS, {"list": _listWithComment, "page": _pageInfo}, "获取评论列表成功");
   }
 
   ///获取当前用户点赞状态
@@ -230,5 +262,23 @@ class BBS extends BaseApi {
     );
 
     return packData(SUCCESS, _likeMap, "获取点赞信息成功");
+  }
+
+  ///获取帖子详情
+  FutureOr<Response> _getBBSDetail() async {
+    if (!(await validateToken())) return tokenExpired;
+    int _id = await get<int>("id");
+    final _bbsDao = GlobalDao("posts");
+    Map<String, dynamic> _bbsJson = await _bbsDao.getOne(where: [Where("id", _id)]);
+    if (_bbsJson.isEmpty) return packData(ERROR, null, "该贴不存在");
+    final _bbs = BBSModel.fromJson(_bbsJson);
+    if (_bbs.delete_time != null) return packData(ERROR, null, "该贴已被删除");
+    final _userDao = GlobalDao("user");
+    Map<String, dynamic> _userJson = await _userDao.getOne(where: [Where("user_id", _bbs.user_id)]);
+    UserModel? _user;
+    if (_userJson.isNotEmpty) {
+      _user = UserModel.fromJson(_userJson);
+    }
+    return packData(SUCCESS, {"post": _bbs.toJson(), "user": _user?.toJson() ?? {}}, "OK");
   }
 }

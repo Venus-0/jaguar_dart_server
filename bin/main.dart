@@ -4,10 +4,17 @@ import 'db/mysql.dart';
 import 'server.dart';
 
 void main(List<String> arguments) async {
-  runZoned(() async {
+  runZonedGuarded(() async {
     print('init server...');
     await Server.instance!.initServer();
     print("init database...");
     await Mysql.instance!.connectDB();
+  }, (e, t) {
+    print("------------------------------");
+    print("------------ERROR-------------");
+    print(e.runtimeType);
+    print(e);
+    print(t);
+    print("------------------------------");
   });
 }

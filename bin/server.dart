@@ -34,7 +34,7 @@ class Server {
 
   Future<void> initServer() async {
     if (server == null && !isInit) {
-      server = new Jaguar(address: '0.0.0.0', port: port)
+      server = new Jaguar(address: '0.0.0.0', port: port,multiThread: true)
         // ..staticFiles("/*", 'bin')
         ..post('/api/*', handler)
         ..get('/api/*', handler);
@@ -45,10 +45,7 @@ class Server {
   }
 
   FutureOr<dynamic> handler(Context ctx) async {
-    print(ctx.uri.toString());
-    print(ctx.uri.toString().split("/"));
     List<String> _addres = (ctx.uri.toString().split("?")[0].toString().split("/"))..removeAt(0);
-
     print(_addres);
     if (_addres.length < 3) {
       ctx.response = Response(body: jsonEncode({}), statusCode: 404);

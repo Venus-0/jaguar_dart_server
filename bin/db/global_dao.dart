@@ -54,7 +54,7 @@ class GlobalDao {
       }
     }
 
-    String _sql = "SELECT $_column FROM $tableName";
+    String _sql = "SELECT $_column FROM `$tableName`";
     if (_where.isNotEmpty) {
       _sql += " WHERE $_where";
     }
@@ -108,7 +108,7 @@ class GlobalDao {
       }
     }
 
-    String _sql = "SELECT $_column FROM $tableName";
+    String _sql = "SELECT $_column FROM `$tableName`";
     if (_where.isNotEmpty) {
       _sql += " WHERE $_where";
     }
@@ -169,7 +169,7 @@ class GlobalDao {
         }
       }
     }
-    String _sql = "UPDATE $tableName SET $_set";
+    String _sql = "UPDATE `$tableName` SET $_set";
 
     if (_where.isNotEmpty) {
       _sql += " WHERE $_where";
@@ -185,9 +185,22 @@ class GlobalDao {
 
     List<String> columns = List.generate(data.keys.toList().length, (index) => "`${data.keys.toList()[index]}`");
     String _sql =
-        "INSERT INTO $tableName (${columns.join(",")}) VALUES (${List.generate(data.keys.toList().length, (index) => "?").join(',')})";
+        "INSERT INTO `$tableName` (${columns.join(",")}) VALUES (${List.generate(data.keys.toList().length, (index) => "?").join(',')})";
     print("[DAO][$tableName] SQL: $_sql");
     Results _res = await conn.query(_sql, data.values.toList());
     return (_res.affectedRows ?? 0) >= 1;
+  }
+
+  ///插入数据返回插入id
+  Future<int> insertReturnId(Map<String, dynamic> data) async {
+    MySqlConnection conn = await Mysql.getDB();
+    if (data.isEmpty) return 0;
+
+    List<String> columns = List.generate(data.keys.toList().length, (index) => "`${data.keys.toList()[index]}`");
+    String _sql =
+        "INSERT INTO `$tableName` (${columns.join(",")}) VALUES (${List.generate(data.keys.toList().length, (index) => "?").join(',')})";
+    print("[DAO][$tableName] SQL: $_sql");
+    Results _res = await conn.query(_sql, data.values.toList());
+    return _res.insertId ?? 0;
   }
 }

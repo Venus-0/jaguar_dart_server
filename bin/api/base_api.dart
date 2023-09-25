@@ -37,7 +37,6 @@ abstract class BaseApi {
 
   Future<Token?> _getToken() async {
     String _token = ctx.headers.value("Authorization") ?? "";
-    print("getToken:$_token");
     if (_token.isEmpty) {
       return null;
     }
@@ -117,7 +116,6 @@ abstract class BaseApi {
         value = double.tryParse(value.toString()) ?? 0.0;
       }
     }
-    print("get type ${value.runtimeType} $T $value");
     return value as T;
   }
 }
