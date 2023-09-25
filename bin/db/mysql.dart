@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:mysql1/mysql1.dart';
 
 import '../conf/config.dart';
@@ -10,6 +12,8 @@ class Mysql {
     }
     return _instance;
   }
+
+  static Timer? _heartBeatTimer;
 
   static MySqlConnection? conn;
   Future<void> connectDB() async {
@@ -24,14 +28,47 @@ class Mysql {
     try {
       conn = await MySqlConnection.connect(settings);
       print("database connected:${Config.dbSettings['host']}:${Config.dbSettings['port']}");
+      _startHeartBeatTest();
     } catch (e) {
       print(e);
     }
   }
 
   static Future<MySqlConnection> getDB() async {
-    await conn?.close();
-    await _instance!.connectDB();
+    // await conn?.close();
+    if (conn == null) {
+      await _instance!.connectDB();
+    }
     return conn!;
+  }
+
+  ///MySQL连接心跳检测
+  ///每15秒做一次查询，查询失败后close连接
+  static _startHeartBeatTest() async {
+    print("----------INITIAL MYSQL HEARTBEAT TEST----------");
+    _heartBeatTimer?.cancel();
+    _heartBeatTimer = Timer.periodic(Duration(milliseconds: 15000), (timer) async {
+      print("-----------START MYSQL HEARTBEAT TEST-----------");
+      try {
+        if (conn != null) {
+          await conn!.query("SELECT * FROM `admin_user` LIMIT 0,1");
+        }
+      } on MySqlException catch (e) {
+        print("--------------MYSQL HEARTBEAT ERROR-------------");
+        _heartBeatTimer?.cancel();
+        _heartBeatTimer = null;
+        conn?.close();
+        conn = null;
+        return;
+      } on StateError catch (e) {
+        print("--------------MYSQL HEARTBEAT ERROR-------------");
+        _heartBeatTimer?.cancel();
+        _heartBeatTimer = null;
+        conn?.close();
+        conn = null;
+        return;
+      }
+      print("-------------MYSQL HEARTBEAT SUCCESS------------");
+    });
   }
 }
