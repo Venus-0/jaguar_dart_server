@@ -30,6 +30,8 @@ class Admin extends BaseApi {
     if (method == 'getPostList') return _getPostList(); //获取帖子列表
     if (method == 'banUser') return _banUser(); //封禁用户
     if (method == 'activeUser') return _activeUser(); //重新启用被封禁的用户
+    if (method == 'getPostComment') return _getPostComment(); //获取帖子下面的评论
+
     return pageNotFound;
   }
 
@@ -285,5 +287,30 @@ class Admin extends BaseApi {
     } else {
       return packData(ERROR, null, "解除封禁失败");
     }
+  }
+
+  ///获取帖子的评论
+  FutureOr<Response> _getPostComment() async {
+    if (!(await validateToken())) return tokenExpired;
+    int _commentId = await get<int>("comment_id");
+    int _page = await get<int>("page");
+    int _pageSize = await get<int>("pageSize");
+    if (_page < 1) {
+      _page = 1;
+    }
+
+    if (_pageSize == 0) {
+      _pageSize = 10;
+    }
+
+    final _commentDao = GlobalDao("comment");
+    List<Map<String, dynamic>> _ret =
+        await _commentDao.getList(where: [Where("comment_id", _commentId)], limit: Limit(limit: _pageSize, start: _page - 1));
+    List<Map<String, dynamic>> _list = [];
+    for (final _json in _ret) {
+      _list.add(CommentModel.fromJson(_json).toJson());
+    }
+
+    return packData(SUCCESS, {"list": _list}, "OK");
   }
 }

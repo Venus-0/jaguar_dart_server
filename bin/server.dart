@@ -7,6 +7,7 @@ import 'api/admin.dart';
 import 'api/base_api.dart';
 import 'api/bbs.dart';
 import 'api/common.dart';
+import 'api/message.dart';
 import 'api/user.dart';
 
 class Server {
@@ -30,11 +31,12 @@ class Server {
     if (method == "common") return Common(ctx);
     if (method == "bbs") return BBS(ctx);
     if (method == "admin") return Admin(ctx);
+    if (method == "message") return Message(ctx);
   }
 
   Future<void> initServer() async {
     if (server == null && !isInit) {
-      server = new Jaguar(address: '0.0.0.0', port: port,multiThread: true)
+      server = new Jaguar(address: '0.0.0.0', port: port, multiThread: true)
         // ..staticFiles("/*", 'bin')
         ..post('/api/*', handler)
         ..get('/api/*', handler);

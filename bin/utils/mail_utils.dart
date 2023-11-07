@@ -6,15 +6,21 @@ import '../model/mail_model.dart';
 
 class MailSender {
   late String _userName;
-  late String _password;
+  late String authorization;
 
   MailSender() {
     _userName = Config.emailSenderConfig['userName'];
-    _password = Config.emailSenderConfig['password'];
+    authorization = Config.emailSenderConfig['authorization'];
   }
 
   Future<bool> sendMail(MailModel mail) async {
-    final smtpServer = qq(_password, _password);
+    final smtpServer = SmtpServer(
+      'smtp.qq.com',
+      ssl: true,
+      port: 465,
+      username: _userName,
+      password: authorization,
+    );
     final message = Message()
       ..from = Address(_userName)
       ..recipients.add(mail.address)
@@ -24,8 +30,10 @@ class MailSender {
 
     try {
       final sendReport = await send(message, smtpServer);
+      print('Message sent: ' + sendReport.toString());
       return true;
     } catch (e) {
+      print(e);
       return false;
     }
   }

@@ -45,10 +45,10 @@ class Mysql {
   ///MySQL连接心跳检测
   ///每15秒做一次查询，查询失败后close连接
   static _startHeartBeatTest() async {
-    print("----------INITIAL MYSQL HEARTBEAT TEST----------");
+    // print("----------INITIAL MYSQL HEARTBEAT TEST----------");
     _heartBeatTimer?.cancel();
     _heartBeatTimer = Timer.periodic(Duration(milliseconds: 15000), (timer) async {
-      print("-----------START MYSQL HEARTBEAT TEST-----------");
+      // print("-----------START MYSQL HEARTBEAT TEST-----------");
       try {
         if (conn != null) {
           await conn!.query("SELECT * FROM `admin_user` LIMIT 0,1");
@@ -68,7 +68,7 @@ class Mysql {
         conn = null;
         return;
       }
-      print("-------------MYSQL HEARTBEAT SUCCESS------------");
+      // print("-------------MYSQL HEARTBEAT SUCCESS------------");
     });
   }
 }

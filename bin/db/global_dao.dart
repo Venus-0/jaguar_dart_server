@@ -126,7 +126,6 @@ class GlobalDao {
     for (final row in _res) {
       _list.add(row.fields);
     }
-    print("[DAO][$tableName] SQL: $_sql VALUE:$_whereList  RES:$_list");
     return _list;
   }
 
@@ -188,6 +187,27 @@ class GlobalDao {
         "INSERT INTO `$tableName` (${columns.join(",")}) VALUES (${List.generate(data.keys.toList().length, (index) => "?").join(',')})";
     print("[DAO][$tableName] SQL: $_sql");
     Results _res = await conn.query(_sql, data.values.toList());
+    return (_res.affectedRows ?? 0) >= 1;
+  }
+
+  ///批量插入
+  Future<bool> insertMulti(List<Map<String, dynamic>> datas) async {
+    MySqlConnection conn = await Mysql.getDB();
+    if (datas.isEmpty) return false;
+    Map<String, dynamic> data = datas[0];
+    if (data.isEmpty) return false;
+    List<String> columns = List.generate(data.keys.toList().length, (index) => "`${data.keys.toList()[index]}`");
+    String values =
+        List.generate(datas.length, (index) => "(${List.generate(datas[index].keys.toList().length, (dataIndex) => "?").join(',')})")
+            .join(',');
+
+    String _sql = "INSERT INTO `$tableName` (${columns.join(",")}) VALUES $values";
+    print("[DAO][$tableName] SQL: $_sql");
+    List<dynamic> queryDatas = [];
+    for (Map<String, dynamic> _data in datas) {
+      queryDatas.addAll(_data.values.toList());
+    }
+    Results _res = await conn.query(_sql, queryDatas);
     return (_res.affectedRows ?? 0) >= 1;
   }
 

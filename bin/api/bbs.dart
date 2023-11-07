@@ -1,12 +1,15 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:jaguar/http/context/context.dart';
 import 'package:jaguar/http/response/response.dart';
+import 'package:mysql1/mysql1.dart';
 
 import 'dart:async';
 
 import '../db/bbs_dao.dart';
 import '../db/global_dao.dart';
+import '../db/image_dao.dart';
 import '../model/bbs_model.dart';
 import '../model/comment_model.dart';
 import '../model/user_model.dart';
@@ -42,6 +45,23 @@ class BBS extends BaseApi {
 
     if (content.isEmpty) return packData(ERROR, null, "内容不能为空");
 
+    ///获取图片
+    String _imageStr = await get<String>('images'); //base64格式图片json
+    List<Blob> _imageList = [];
+    if (_imageStr.isNotEmpty) {
+      List<String> _images = List<String>.from(jsonDecode(_imageStr));
+      for (String _base64Image in _images) {
+        if (_base64Image.isNotEmpty) {
+          try {
+            Uint8List _codeUnits = base64Decode(_base64Image.split(",").last); //base64转Uint8List
+            _imageList.add(Blob.fromBytes(_codeUnits));
+          } catch (e) {
+            print("图片错误$e");
+          }
+        }
+      }
+    }
+
     final _now = DateTime.now();
     BBSModel _bbs = BBSModel(
       user_id: _user.user_id,
@@ -55,13 +75,16 @@ class BBS extends BaseApi {
     _bbsJson.remove("id");
 
     GlobalDao _bbsDao = GlobalDao("posts");
-    bool _ret = await _bbsDao.insert(_bbsJson);
-
-    if (_ret) {
-      return packData(SUCCESS, null, "添加成功");
-    } else {
+    int id = await _bbsDao.insertReturnId(_bbsJson);
+    if (id == 0) {
       return packData(ERROR, null, "添加失败");
     }
+
+    if (_imageList.isNotEmpty) {
+      await ImageDao.addImages(id, type, _user.user_id, _imageList);
+    }
+
+    return packData(SUCCESS, null, "添加成功");
   }
 
   ///添加评论
@@ -148,9 +171,21 @@ class BBS extends BaseApi {
 
     List<Map<String, dynamic>> _postList =
         await _bbsDao.getList(where: _where, order: "update_time DESC", limit: Limit(limit: _pageSize, start: _startIndex));
+    final _userDao = GlobalDao("user");
     for (int i = 0; i < _postList.length; i++) {
       BBSModel _bbsModel = BBSModel.fromJson(_postList[i]);
-      _postList[i] = _bbsModel.toJson();
+      Map<String, dynamic> _post = _bbsModel.toJson();
+
+      ///找用户
+      Map<String, dynamic> _user = await _userDao.getOne(column: ['avatar'], where: [Where("user_id", _bbsModel.user_id)]);
+      if (_user['avatar'] != null && _user['avatar'] is Blob) {
+        _post['avatar'] = base64Encode((_user['avatar'] as Blob).toBytes());
+      }
+
+      ///找图片
+      List<Blob> _images = await ImageDao.getImages(_bbsModel.id, _bbsModel.question_type);
+      _post['images'] = List.generate(_images.length, (index) => base64Encode(_images[index].toBytes())); //blob转base64
+      _postList[i] = _post;
     }
 
     Map<String, dynamic> _pageInfo = {
@@ -281,4 +316,6 @@ class BBS extends BaseApi {
     }
     return packData(SUCCESS, {"post": _bbs.toJson(), "user": _user?.toJson() ?? {}}, "OK");
   }
+
+  
 }
