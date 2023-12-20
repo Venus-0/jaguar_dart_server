@@ -25,12 +25,14 @@ class GlobalDao {
     List<Where> where = const [],
     String order = "",
     Limit? limit,
+    String groupBy = "",
   }) async {
     MySqlConnection conn = await Mysql.getDB();
     String _column = column.isEmpty ? "*" : column.join(",");
     String _where = "";
     List<Object?>? _whereList;
 
+    ///构建where
     if (where.isNotEmpty) {
       _whereList = [];
       for (int i = 0; i < where.length; i++) {
@@ -43,7 +45,7 @@ class GlobalDao {
             _where += '`${_value.key}` IN (${List.generate((_value.value as List).length, (index) => "?").join(",")})';
             _whereList.addAll(_value.value as List);
           } else if (_value.operator == "LIKE") {
-            _where += '`${_value.key}` LIKE "${_value.value}"';
+            _where += '`${_value.key}` LIKE "%${_value.value}%"';
           } else {
             _where += "`${_value.key}` ${_value.operator} ${_value.value}";
           }
@@ -54,15 +56,25 @@ class GlobalDao {
       }
     }
 
+    ///初始sql
     String _sql = "SELECT $_column FROM `$tableName`";
+
+    ///拼接where
     if (_where.isNotEmpty) {
       _sql += " WHERE $_where";
     }
 
+    ///拼接group
+    if (groupBy.isNotEmpty) {
+      _sql += " GROUP BY $groupBy";
+    }
+
+    ///拼接order
     if (order.isNotEmpty) {
       _sql += " ORDER BY $order";
     }
 
+    ///拼接limit
     if (limit != null) {
       _sql += " LIMIT ${limit.start},${limit.limit}";
     }
@@ -79,12 +91,14 @@ class GlobalDao {
     List<Where> where = const [],
     String order = "",
     Limit? limit,
+    String groupBy = "",
   }) async {
     MySqlConnection conn = await Mysql.getDB();
     String _column = column.isEmpty ? "*" : column.join(",");
     String _where = "";
     List<Object?>? _whereList;
 
+    ///构建where
     if (where.isNotEmpty) {
       _whereList = [];
       for (int i = 0; i < where.length; i++) {
@@ -97,7 +111,7 @@ class GlobalDao {
             _where += '`${_value.key}` IN (${List.generate((_value.value as List).length, (index) => "?").join(",")})';
             _whereList.addAll(_value.value as List);
           } else if (_value.operator == "LIKE") {
-            _where += '`${_value.key}` LIKE "${_value.value}"';
+            _where += '`${_value.key}` LIKE "%${_value.value}%"';
           } else {
             _where += "`${_value.key}` ${_value.operator} ${_value.value}";
           }
@@ -108,15 +122,25 @@ class GlobalDao {
       }
     }
 
+    ///初始化sql语句
     String _sql = "SELECT $_column FROM `$tableName`";
+
+    ///拼接where
     if (_where.isNotEmpty) {
       _sql += " WHERE $_where";
     }
 
+    ///拼接group
+    if (groupBy.isNotEmpty) {
+      _sql += " GROUP BY $groupBy";
+    }
+
+    ///拼接roder
     if (order.isNotEmpty) {
       _sql += " ORDER BY $order";
     }
 
+    ///拼接limit
     if (limit != null) {
       _sql += " LIMIT ${limit.start},${limit.limit}";
     }
@@ -137,15 +161,19 @@ class GlobalDao {
     MySqlConnection conn = await Mysql.getDB();
     List<Object?> _whereList = [];
     String _set = '';
+
+    ///构建value
     value.forEach((key, value) {
-      _set += "$key = ? ,";
+      _set += "`$key` = ? ,";
       _whereList.add(value);
     });
 
+    ///构建set
     if (value.isNotEmpty) {
       _set = _set.substring(0, _set.length - 1);
     }
 
+    ///构建where
     String _where = "";
     if (where.isNotEmpty) {
       for (int i = 0; i < where.length; i++) {
@@ -158,7 +186,7 @@ class GlobalDao {
             _where += '`${_value.key}` IN (${List.generate((_value.value as List).length, (index) => "?").join(",")})';
             _whereList.addAll(_value.value as List);
           } else if (_value.operator == "LIKE") {
-            _where += "`${_value.key}` LIKE ${_value.value}";
+            _where += '`${_value.key}` LIKE "%${_value.value}%"';
           } else {
             _where += "`${_value.key}` ${_value.operator} ${_value.value}";
           }
@@ -168,8 +196,11 @@ class GlobalDao {
         }
       }
     }
+
+    ///初始化sql
     String _sql = "UPDATE `$tableName` SET $_set";
 
+    ///拼接where
     if (_where.isNotEmpty) {
       _sql += " WHERE $_where";
     }

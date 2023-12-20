@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:intl/intl.dart';
 import 'package:jaguar/jaguar.dart';
+import 'package:mysql1/mysql1.dart';
 
 import '../db/bbs_dao.dart';
 import '../db/comment_dao.dart';
@@ -18,14 +19,15 @@ class Common extends BaseApi {
   @override
   FutureOr<Response> method(String method) async {
     if (!(await validateToken())) return tokenExpired;
-    if (method == "checkLogin") return await _checkLogin(); //检查更新
-    if (method == "like") return await _like(); //点赞
-    if (method == "unlike") return await _unlike(); //撤销点赞
-    if (method == "checkLike") return await _checkLike(); //检查是否点赞
-    if (method == "subscribe") return await _subscribe(); //关注
-    if (method == "unSubscribe") return await _unSubscribe(); //取消关注
-    if (method == "checkSubscribe") return await _checkSubscribe(); //检查是否关注
-    return Response(body: jsonEncode({}), statusCode: NOT_FOUND);
+    if (method == "checkLogin") return _checkLogin(); //检查更新
+    if (method == "like") return _like(); //点赞
+    if (method == "unlike") return _unlike(); //撤销点赞
+    if (method == "checkLike") return _checkLike(); //检查是否点赞
+    if (method == "subscribe") return _subscribe(); //关注
+    if (method == "unSubscribe") return _unSubscribe(); //取消关注
+    if (method == "checkSubscribe") return _checkSubscribe(); //检查是否关注
+    if (method == "getImage") return _getImage(); //获取图片
+    return pageNotFound;
   }
 
   FutureOr<Response> _checkLogin() async {
@@ -139,7 +141,7 @@ class Common extends BaseApi {
     final _subChk = await _subscribeDao.getOne(
         where: [Where("user_id", _user.user_id), Where("subscribe_id", _subscribeId), Where("subscribe_type", _type)],
         order: "create_time DESC");
-    if (_subChk.isNotEmpty && _subChk['delete_time'] != null) {
+    if (_subChk.isNotEmpty && _subChk['delete_time'] == null) {
       //已经关注
       return packData(SUCCESS, null, "已经关注了");
     }
@@ -177,7 +179,7 @@ class Common extends BaseApi {
     final _subChk = await _subscribeDao.getOne(
         where: [Where("user_id", _user.user_id), Where("subscribe_id", _subscribeId), Where("subscribe_type", _type)],
         order: "create_time DESC");
-    if (_subChk.isNotEmpty && _subChk['delete_time'] != null) {
+    if (_subChk.isNotEmpty && _subChk['delete_time'] == null) {
       Map<String, dynamic> _modify = {'delete_time': DateFormat("yyyy-MM-dd HH:mm:ss").format(DateTime.now())};
 
       final _ret = await _subscribeDao.update(_modify, where: [
@@ -210,9 +212,23 @@ class Common extends BaseApi {
     final _subChk = await _subscribeDao.getOne(
         where: [Where("user_id", _user.user_id), Where("subscribe_id", _subscribeId), Where("subscribe_type", _type)],
         order: "create_time DESC");
-    if (_subChk.isNotEmpty && _subChk['delete_time'] != null) {
+    if (_subChk.isNotEmpty && _subChk['delete_time'] == null) {
       return packData(SUCCESS, null, "OK");
     }
     return packData(ERROR, null, "");
+  }
+
+  ///获取图片
+  FutureOr<Response> _getImage() async {
+    if (!(await validateToken())) return tokenExpired;
+    int _imageId = await get<int>("id");
+    final _imageDao = GlobalDao("image");
+    Map<String, dynamic> _ret = await _imageDao.getOne(column: ['file_data'], where: [Where("id", _imageId)]);
+    String _base64Image = "";
+    if (_ret.isNotEmpty) {
+      Blob _imageBlob = _ret['file_data'];
+      _base64Image = base64Encode(_imageBlob.toBytes());
+    }
+    return packData(SUCCESS, {"data": _base64Image}, "OK");
   }
 }

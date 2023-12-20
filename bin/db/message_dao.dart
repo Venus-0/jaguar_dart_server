@@ -28,7 +28,7 @@ class MessageDao {
     _message.remove('id');
 
     int id = await _messageDao.insertReturnId(_message);
-
+    print("私信id  $id");
     if (id != 0) {
       ///发送消息至指定用户（若连接存在）
       _message['id'] = id;

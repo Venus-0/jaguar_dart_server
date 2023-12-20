@@ -17,10 +17,20 @@ class ImageDao {
   }
 
   ///查找图片
-  static Future<List<Blob>> getImages(int bbsId,int type) async{
+  static Future<List<Blob>> getImages(int bbsId, int type) async {
     GlobalDao _imageDao = GlobalDao("image");
-    List<Map<String,dynamic>> _list = await _imageDao.getList(column: ['file_data'],where: [Where("type_id",bbsId),Where("type",type)],order: "id DESC");
+    List<Map<String, dynamic>> _list =
+        await _imageDao.getList(column: ['file_data'], where: [Where("type_id", bbsId), Where("type", type)], order: "id DESC");
     List<Blob> _images = List.generate(_list.length, (index) => _list[index]['file_data']);
     return _images;
+  }
+
+  ///返回图片id集合
+  static Future<List<int>> getImageIds(int bbsId, int type) async {
+    GlobalDao _imageDao = GlobalDao("image");
+    List<Map<String, dynamic>> _list =
+        await _imageDao.getList(column: ['id'], where: [Where("type_id", bbsId), Where("type", type)], order: "id DESC");
+    List<int> _imageIds = List.generate(_list.length, (index) => _list[index]['id']);
+    return _imageIds;
   }
 }

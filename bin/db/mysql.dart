@@ -23,7 +23,7 @@ class Mysql {
       user: Config.dbSettings['user'],
       password: Config.dbSettings['password'],
       db: Config.dbSettings['db'],
-      maxPacketSize: 62 * 1024 * 1024,
+      maxPacketSize: 512 * 1024 * 1024,
     );
     try {
       conn = await MySqlConnection.connect(settings);
@@ -51,7 +51,7 @@ class Mysql {
       // print("-----------START MYSQL HEARTBEAT TEST-----------");
       try {
         if (conn != null) {
-          await conn!.query("SELECT * FROM `admin_user` LIMIT 0,1");
+          await conn!.query("SELECT VERSION()");
         }
       } on MySqlException catch (e) {
         print("--------------MYSQL HEARTBEAT ERROR-------------");

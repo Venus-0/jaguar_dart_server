@@ -115,7 +115,7 @@ class Message extends BaseApi {
     int _receiverId = await get<int>("receiver_id");
     if (_message.isEmpty) return packData(ERROR, null, "消息不能为空");
     bool _ret =
-        await MessageDao.addMessageWithSocketData(_message, _user.user_id, _receiverId, SocketManager.instance.userSockets[_user.user_id]);
+        await MessageDao.addMessageWithSocketData(_message, _user.user_id, _receiverId, SocketManager.instance.userSockets[_receiverId]);
     if (_ret) {
       return packData(SUCCESS, null, "OK");
     } else {

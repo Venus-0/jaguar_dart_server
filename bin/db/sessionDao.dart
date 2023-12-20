@@ -61,4 +61,13 @@ class SessionDao {
     Map<String, dynamic> _sessionJson = session.toJson();
     return await globalDao.insert(_sessionJson);
   }
+
+  Future<bool> clearSession(int id) async {
+    return await globalDao.update({
+      "disable_time": DateFormat("yyyy-MM-dd HH:mm:ss").format(DateTime.now())
+    }, where: [
+      Where('user_id', id),
+      Where("disable_time", null, "IS"),
+    ]);
+  }
 }

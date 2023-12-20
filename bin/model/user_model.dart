@@ -5,11 +5,14 @@ import 'package:mysql1/mysql1.dart';
 
 ///用户数据模型
 class UserModel {
+  static const int RANK_NORMAL = 0; //普通用户
+  static const int RANK_SUPPORT = 1; //技术支持用户
   int user_id; //用户id
   String password = ""; //用户密码（MD5）
   String email = ""; //用户邮箱
   String username = ""; //用户名
   Blob? avatar; //用户头像
+  int rank;
   DateTime? disable_time; //用户禁用时间
   DateTime? update_time; //用户更新时间
   DateTime? create_time; //用户创建时间
@@ -20,6 +23,7 @@ class UserModel {
     this.email = "",
     this.avatar,
     this.username = "",
+    this.rank = 0,
     this.create_time,
     this.disable_time,
     this.update_time,
@@ -42,6 +46,7 @@ class UserModel {
         email: jsonRes['email'],
         username: jsonRes['username'],
         avatar: _avatar,
+        rank: jsonRes['rank'],
         create_time: jsonRes['create_time'],
         disable_time: jsonRes['disable_time'],
         update_time: jsonRes['update_time'],
@@ -55,6 +60,7 @@ class UserModel {
         "username": username,
         "email": email,
         "avatar": avatar == null ? "" : base64Encode(avatar!.toBytes()),
+        "rank": rank,
         'create_time': create_time == null ? null : DateFormat("yyyy-MM-dd HH:mm:ss").format(create_time!),
         'disable_time': disable_time == null ? null : DateFormat("yyyy-MM-dd HH:mm:ss").format(disable_time!),
         'update_time': update_time == null ? null : DateFormat("yyyy-MM-dd HH:mm:ss").format(update_time!),
@@ -66,6 +72,7 @@ class UserModel {
         "username": username,
         "email": email,
         "avatar": avatar == null ? "" : base64Encode(avatar!.toBytes()),
+        "rank": rank,
         'create_time': create_time == null ? null : DateFormat("yyyy-MM-dd HH:mm:ss").format(create_time!),
         'disable_time': disable_time == null ? null : DateFormat("yyyy-MM-dd HH:mm:ss").format(disable_time!),
         'update_time': update_time == null ? null : DateFormat("yyyy-MM-dd HH:mm:ss").format(update_time!),

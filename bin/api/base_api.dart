@@ -32,6 +32,7 @@ abstract class BaseApi {
     responseBean.code = code;
     responseBean.msg = msg;
     responseBean.result = data ?? {};
+    // return Response(statusCode: responseBean.code, body: responseBean.toJson());
     return Response(statusCode: responseBean.code, body: responseBean.toJsonString());
   }
 
@@ -41,7 +42,7 @@ abstract class BaseApi {
       return null;
     }
     GlobalDao _tokenDao = GlobalDao("token");
-    Map<String, dynamic> _tokenRecord = await _tokenDao.getOne(where: [Where("token", _token)]);
+    Map<String, dynamic> _tokenRecord = await _tokenDao.getOne(where: [Where("token", _token), Where("disable_time", null, "IS")]);
     if (_tokenRecord.isNotEmpty) {
       return Token.fromJson(_tokenRecord);
     }
@@ -96,7 +97,7 @@ abstract class BaseApi {
       } else if (ctx.isUrlEncodedForm) {
         res = await ctx.bodyAsUrlEncodedForm();
       }
-      print(res);
+      // print(res);
       value = res[key];
     }
     if (value == null) {
